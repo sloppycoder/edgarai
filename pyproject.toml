@@ -6,6 +6,7 @@ authors = [{ name = "Li Lin", email = "guru.lin@gmail.com" }]
 readme = "README.md"
 requires-python = ">= 3.12"
 dependencies = [
+    "functions-framework>=3.8.2",
     "google-cloud-bigquery>=3.27.0",
     "google-cloud-storage>=2.19.0",
 ]

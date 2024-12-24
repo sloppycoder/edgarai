@@ -2,11 +2,12 @@ import os
 import re
 from datetime import datetime
 
+import functions_framework
 from google.cloud import bigquery, storage
 
 dataset_id = os.environ.get("BQ_DATASET_ID", "edgar")
 table_id = os.environ.get("BQ_TABLE_ID", "master_idx")
-folder_name = os.environ.get("GCS_FOLDER_NAME", "edgar_master_idx/")
+folder_name = os.environ.get("GCS_FOLDER_NAME", "edgar_master_idx")
 timestamp = datetime.now().strftime("%H%M%S")
 
 schema = [
@@ -18,13 +19,17 @@ schema = [
 ]
 
 
-def gcs_event_handler(event, context):
+@functions_framework.cloud_event
+def gcs_event_handler(cloud_event):
     """Triggered by a file upload to a Cloud Storage bucket."""
     # Get the bucket and file details
-    bucket_name = event["bucket"]
-    file_name = event["name"]
+    event_data = cloud_event.data
+    print(event_data)
 
-    if not file_name.startswith(folder_name) or not file_name.endswith(".idx"):
+    bucket_name = event_data["bucket"]
+    file_name = event_data["name"]
+
+    if not file_name.startswith(folder_name + "/") or not file_name.endswith(".idx"):
         print(f"Ignoring file: {file_name}")
         return
 
