@@ -9,20 +9,12 @@ dataset_id = os.environ.get("BQ_DATASET_ID", "edgar")
 table_id = os.environ.get("BQ_TABLE_ID", "master_idx")
 folder_name = os.environ.get("GCS_FOLDER_NAME", "edgar_master_idx")
 timestamp = datetime.now().strftime("%H%M%S")
-
-schema = [
-    bigquery.SchemaField("cik", "STRING"),
-    bigquery.SchemaField("company_name", "STRING"),
-    bigquery.SchemaField("form_type", "STRING"),
-    bigquery.SchemaField("date_filed", "DATE"),
-    bigquery.SchemaField("filename", "STRING"),
-]
+debug = os.environ.get("DEBUG", "True").lower() == "true"
 
 
 @functions_framework.cloud_event
 def gcs_event_handler(cloud_event):
     """Triggered by a file upload to a Cloud Storage bucket."""
-    # Get the bucket and file details
     event_data = cloud_event.data
     print(event_data)
 
@@ -51,52 +43,79 @@ def create_table_if_not_exists(bq_client, dataset_id, table_id):
         print(f"Table {table_ref} already exists.")
     except Exception:
         print(f"Table {table_ref} does not exist. Creating table...")
-
-        table = bigquery.Table(table_ref, schema=schema)
-        bq_client.create_table(table)
+        bq_client.create_table(
+            bigquery.Table(
+                table_ref,
+                schema=[
+                    bigquery.SchemaField("cik", "STRING", max_length=10),
+                    bigquery.SchemaField("company_name", "STRING", max_length=150),
+                    bigquery.SchemaField("form_type", "STRING", max_length=20),
+                    bigquery.SchemaField("date_filed", "DATE"),
+                    bigquery.SchemaField("filename", "STRING", max_length=100),
+                    bigquery.SchemaField(
+                        "accession_number",
+                        "STRING",
+                        max_length=20,
+                        mode="NULLABLE",
+                    ),
+                ],
+            )
+        )
         print(f"Table {table_ref} created.")
 
 
 def load_csv_to_bigquery(bq_client, bucket_name, file_name, dataset_id, table_id):
     """Load a CSV file into BigQuery."""
     uri = f"gs://{bucket_name}/{file_name}"
-    temp_table_id = f"{table_id}_{timestamp}"
-    temp_table_ref = f"{bq_client.project}.{dataset_id}.{temp_table_id}"
+    temp_table_ref = f"{bq_client.project}.{dataset_id}.{table_id}_{timestamp}"
     main_table_ref = f"{bq_client.project}.{dataset_id}.{table_id}"
 
-    create_table_if_not_exists(bq_client, dataset_id, f"{table_id}_{timestamp}")
-    try:
-        job_config = bigquery.LoadJobConfig(
-            source_format=bigquery.SourceFormat.CSV,
-            skip_leading_rows=11,
-            field_delimiter="|",
-        )
+    job_config = bigquery.LoadJobConfig(
+        source_format=bigquery.SourceFormat.CSV,
+        skip_leading_rows=12,
+        field_delimiter="|",
+        autodetect=True,
+    )
 
-        print(f"Loading data from {uri} to {temp_table_ref}...")
-        load_job = bq_client.load_table_from_uri(
-            uri, temp_table_ref, job_config=job_config
-        )
-        load_job.result()  # Wait for the job to complete
+    print(f"Loading data from {uri} to {temp_table_ref}...")
+    job = bq_client.load_table_from_uri(uri, temp_table_ref, job_config=job_config)
+    job.result()
 
-        columns = [field.name for field in schema]
-        print(columns)
+    merge_sql = rf"""
+    MERGE `{main_table_ref}` T
+    USING `{temp_table_ref}` S
+    ON      T.cik = CAST(int64_field_0 AS STRING)
+        AND T.company_name = S.string_field_1
+        AND T.form_type = S.string_field_2
+        AND T.date_filed = S.date_field_3
+        AND T.filename = S.string_field_4
+    WHEN NOT MATCHED THEN
+    INSERT (
+        cik,
+        company_name,
+        form_type,
+        date_filed,
+        filename,
+        accession_number
+    )
+    VALUES
+    (
+        CAST(S.int64_field_0 AS STRING),
+        S.string_field_1,
+        S.string_field_2,
+        S.date_field_3,
+        S.string_field_4,
+        REGEXP_EXTRACT(S.string_field_4, r'(\d{{10}}-\d{{2}}-\d{{6}})')
+    )
+    """
+    if debug:
+        print(merge_sql)
+    job = bq_client.query(merge_sql)
+    job.result()
+    print(f"rows merged:{job.num_dml_affected_rows}")
 
-        merge_query = f"""
-        MERGE `{main_table_ref}` T
-        USING `{temp_table_ref}` S
-        ON {" AND ".join([f"T.{col} = S.{col}" for col in columns])}
-        WHEN NOT MATCHED THEN
-        INSERT ({', '.join(columns)}) VALUES
-           ({', '.join([f'S.{col}' for col in columns])})
-        """
-        print(f"MERGE QUERY: {merge_query}")
-        query_job = bq_client.query(merge_query)
-        query_job.result()  # Wait for the job to complete
-        print(f"Data merged successfully into {main_table_ref}.")
-
-    finally:
-        bq_client.delete_table(temp_table_ref)
-        print(f"Temporary table {temp_table_ref} deleted.")
+    bq_client.delete_table(temp_table_ref)
+    print(f"Temporary table {temp_table_ref} deleted.")
 
 
 def rename_file_in_gcs(bucket_name, file_name):

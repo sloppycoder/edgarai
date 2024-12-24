@@ -37,11 +37,15 @@ gcloud functions deploy download_edgar_idx \
   --allow-unauthenticated \
   --set-env-vars="GCS_BUCKET_NAME=edgar_666,GCS_FOLDER_NAME=edgar_master_idx,SECRET_WORD=${SECRET_WORD}"
 
+# drop all files and table and start from scratch
+gsutil -m rm -r  gs://edgar_666/edgar_master_idx
+bq query --use_legacy_sql=false "drop table edgar-ai.edgar.master_idx"
+
 # run trigger script
 python tools/trigger_idx_load.py https://us-central1-edgar-ai.cloudfunctions.net/download_edgar_idx $SECRET_WORD 2020 2021
 
 # check results
 gsutil ls -l  gs://edgar_666/edgar_master_idx
-bq query --use_legacy_sql=false "select count(*) from edgar-ai.edgar.master_idx where form_type='485BPOS'"
+bq query --use_legacy_sql=false "select count(*) from edgar-ai.edgar.master_idx where accession_number is null"
 
 ```
