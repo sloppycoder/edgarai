@@ -33,14 +33,14 @@ def download_edgar_idx(url: str, blob_name: str) -> tuple[int, str]:
 @functions_framework.http
 def http_handler(request):
     """HTTP Cloud Function to download EDGAR index file and save to Cloud Storage."""
-    year = int(request.args.get("year"))
-    qtr = int(request.args.get("qtr"))
+    year = request.args.get("year")
+    qtr = request.args.get("qtr")
     word = request.args.get("word")
 
     if not word or word != secret_word:
         return jsonify({"error": "Invalid secret word"}), 403
 
-    if not (year >= 2000 and year <= 2024 and qtr >= 1 and qtr <= 4):
+    if not year or not qtr:
         return jsonify({"error": "Invalid year and qtr"}), 400
 
     destination_blob_name = f"{folder_name}/{year}_{qtr}.idx"
@@ -50,8 +50,10 @@ def http_handler(request):
     )
 
     if status_code != 200:
-        return jsonify({"error": message}), status_code
+        return jsonify(
+            {"error": message},
+        ), status_code
     else:
         return jsonify(
-            {"message": f"File downloaded and saved to {destination_blob_name}"}
+            {"message": f"File downloaded and saved to {destination_blob_name}"},
         ), 200

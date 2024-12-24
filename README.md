@@ -32,8 +32,9 @@ gcloud functions deploy download_edgar_idx \
   --region us-central1 \
   --runtime python312 \
   --source ./download_edgar_idx \
-  --entry-point download_edgar_idx \
+  --entry-point http_handler \
   --trigger-bucket edgar_666  \
+  --allow-unauthenticated \
   --set-env-vars="GCS_BUCKET_NAME=edgar_666,GCS_FOLDER_NAME=edgar_master_idx,SECRET_WORD=${SECRET_WORD}"
 
 ```
