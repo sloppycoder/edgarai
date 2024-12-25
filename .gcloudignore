@@ -12,6 +12,6 @@
 # below:
 .git
 .gitignore
-
+tests/
 node_modules
 #!include:.gitignore

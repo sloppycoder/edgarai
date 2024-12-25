@@ -1,2 +1,9 @@
+# sample dotenv file for testing
 
-
+# SDK Configuration
+GOOGLE_APPLICATION_CREDENTIALS=<key_json_file>
+CLOUDSDK_COMPUTE_REGION=us-central1
+# App Configuration
+GCS_BUCKET_NAME=edgar_test
+EDGAR_CACHE_DIR=cache_test
+BQ_DATASET_ID=edgartest

@@ -12,40 +12,34 @@ gcloud services enable \
    bigquery.googleapis.com \
    pubsub.googleapis.com
 
+export CLOUDSDK_COMPUTE_REGION=us-central1
+
 # create the bucket
-gsutil mb -l us-central1 -b on -p edgar-ai gs://edgar_666/
+gsutil mb -l $CLOUDSDK_COMPUTE_REGION -b on -p edgar-ai gs://edgar_666/
 
 # deploy the functions
-gcloud functions deploy load_master_idx \
-  --gen2 \
-  --region us-central1 \
-  --runtime python312 \
-  --source ./load_master_idx \
-  --entry-point gcs_event_handler \
-  --trigger-bucket edgar_666  \
-  --set-env-vars="BQ_DATASET_ID=edgar,BQ_TABLE_ID=master_idx,GCS_FOLDER_NAME=edgar_master_idx"
-
 export SECRET_WORD=$(openssl rand -hex 16)
 echo $SECRET_WORD
-gcloud functions deploy download_edgar_idx \
+gcloud functions deploy load_edgar_idx \
   --gen2 \
-  --region us-central1 \
+  --region $CLOUDSDK_COMPUTE_REGION \
   --runtime python312 \
-  --source ./download_edgar_idx \
-  --entry-point http_handler \
-  --trigger-bucket edgar_666  \
+  --source . \
+  --trigger-http \
+  --entry-point load_idx_handler \
   --allow-unauthenticated \
-  --set-env-vars="GCS_BUCKET_NAME=edgar_666,GCS_FOLDER_NAME=edgar_master_idx,SECRET_WORD=${SECRET_WORD}"
+  --set-env-vars="GCS_BUCKET_NAME=edgar_666,SECRET_WORD=${SECRET_WORD}"
 
 # drop all files and table and start from scratch
-gsutil -m rm -r  gs://edgar_666/edgar_master_idx
+gsutil -m rm -r  gs://edgar_666/cache
 bq query --use_legacy_sql=false "drop table edgar-ai.edgar.master_idx"
 
 # run trigger script
-python tools/trigger_idx_load.py https://us-central1-edgar-ai.cloudfunctions.net/download_edgar_idx $SECRET_WORD 2020 2021
+export FUNC_URL=$(gcloud functions describe load_edgar_idx --region $CLOUDSDK_COMPUTE_REGION --format 'value(url)')
+curl -v $FUNC_URL\?year=2020\&qtr=1\&word=$SECRET_WORD
 
 # check results
-gsutil ls -l  gs://edgar_666/edgar_master_idx
+gsutil ls -lr  gs://edgar_666/cache
 bq query --use_legacy_sql=false "select count(*) from edgar-ai.edgar.master_idx where accession_number is null"
 
 ```
