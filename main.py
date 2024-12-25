@@ -12,9 +12,6 @@ from edgar import load_master_idx
 # cannot be triggered
 secret_word = os.environ.get("SECRET_WORD", random.randbytes(10).hex())
 
-log_level = os.environ.get("LOG_LEVEL", "INFO")
-logging.basicConfig(level=log_level)
-
 
 @functions_framework.http
 def load_idx_handler(request):

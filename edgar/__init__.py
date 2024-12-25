@@ -14,7 +14,7 @@ table_id = os.environ.get("BQ_IDX_TABLE_ID", "master_idx")
 EDGAR_BASE_URL = "https://www.sec.gov/Archives"
 
 
-def download_file(filename: str, refresh: bool) -> str | None:
+def download_file(filename: str, refresh: bool = False) -> str | None:
     """
     Download a file to Cloud Storage if it doesn't exist or if refresh is True.
 
