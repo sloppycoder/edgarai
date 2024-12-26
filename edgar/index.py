@@ -1,40 +1,65 @@
 import logging
+import os
 from datetime import datetime
 
 from google.cloud import bigquery
 
+from gcp_helper import ensure_table_exists
+
+from .util import download_file
+
 logger = logging.getLogger(__name__)
 
+dataset_id = os.environ.get("BQ_DATASET_ID", "edgar")
+bucket_name = os.environ.get("GCS_BUCKET_NAME", "")
+cache_dir = os.environ.get("EDGAR_CACHE_DIR", "cache")
 
-def create_idx_table(bq_client: bigquery.Client, dataset_id: str, table_id: str) -> bool:
-    """Create a BigQuery table if it does not exist."""
-    table_ref = f"{bq_client.project}.{dataset_id}.{table_id}"
-    try:
-        bq_client.get_table(table_ref)
-        logger.debug(f"Table {table_ref} already exists.")
-        return False
-    except Exception:
-        logger.debug(f"Table {table_ref} does not exist. Creating table...")
-        bq_client.create_table(
-            bigquery.Table(
-                table_ref,
-                schema=[
-                    bigquery.SchemaField("cik", "STRING", max_length=10),
-                    bigquery.SchemaField("company_name", "STRING", max_length=150),
-                    bigquery.SchemaField("form_type", "STRING", max_length=20),
-                    bigquery.SchemaField("date_filed", "DATE"),
-                    bigquery.SchemaField("filename", "STRING", max_length=100),
-                    bigquery.SchemaField(
-                        "accession_number",
-                        "STRING",
-                        max_length=20,
-                        mode="NULLABLE",
-                    ),
-                ],
-            )
+master_idx_schema = [
+    bigquery.SchemaField("cik", "STRING", max_length=10),
+    bigquery.SchemaField("company_name", "STRING", max_length=150),
+    bigquery.SchemaField("form_type", "STRING", max_length=20),
+    bigquery.SchemaField("date_filed", "DATE"),
+    bigquery.SchemaField("filename", "STRING", max_length=100),
+    bigquery.SchemaField(
+        "accession_number",
+        "STRING",
+        max_length=20,
+        mode="NULLABLE",
+    ),
+]
+
+
+def load_master_idx(year: int, quarter: int, refresh=False) -> int | None:
+    """
+    Load the master index file for a given year and quarter into BigQuery
+
+    Args:
+        year (int): The year of the master index file.
+        quarter (int): The quarter of the master index file (1 to 4).
+        refresh (bool): If True, download the file even if it exists in the bucket.
+
+    Returns:
+        int | None: The size of the downloaded file in bytes, or None if the
+        download fails or the year/quarter is invalid.
+    """
+    if year < 2000 or year > 2026 or quarter < 1 or quarter > 4:
+        logger.info(f"Invalid year/quarter {year}/{quarter}")
+        return
+
+    idx_filename = f"edgar/full-index/{year}/QTR{quarter}/master.idx"
+    idx_uri = download_file(idx_filename, refresh=refresh)
+    if idx_uri is None:
+        return
+
+    table_id = "master_idx"
+    with bigquery.Client() as bq_client:
+        ensure_table_exists(
+            bq_client,
+            f"{bq_client.project}.{dataset_id}.master_idx",
+            schema=master_idx_schema,
         )
-        logger.info(f"Table {table_ref} created.")
-        return True
+        rows = load_idx_to_bigquery(bq_client, idx_uri, dataset_id, table_id)
+        return rows
 
 
 def load_idx_to_bigquery(

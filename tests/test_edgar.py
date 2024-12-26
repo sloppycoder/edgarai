@@ -1,5 +1,12 @@
-from edgar import download_file
-from sec import DEFAULT_TEXT_CHUNK_SIZE, SECFiling, chunk_text, trim_html_content
+from edgar.filing import SECFiling
+from edgar.util import (
+    DEFAULT_TEXT_CHUNK_SIZE,
+    chunk_text,
+    download_file,
+    idx_filename2accession_number,
+    idx_filename2index_headers,
+    trim_html_content,
+)
 
 # to be tested with chunk size 400
 test_text_content = """
@@ -71,6 +78,8 @@ def test_chunk_large_filing():
     assert len(chunks) == 133
     assert all(len(c) <= DEFAULT_TEXT_CHUNK_SIZE + 90 for c in chunks)
 
+    # assert filing.save_chunked_texts("485BPOS") > 0
+
 
 def test_chunk_long_line_filing():
     # this filing has only 2 lines, one of them is 256k long (why?)
@@ -82,3 +91,19 @@ def test_chunk_long_line_filing():
     chunks = chunk_text(trim_html_content(doc_path))
 
     assert max([len(c) for c in chunks]) <= DEFAULT_TEXT_CHUNK_SIZE + 80
+
+
+def test_idx_filename2index_headers():
+    assert (
+        idx_filename2index_headers("edgar/data/1035018/0001193125-20-000327.txt")
+        == "edgar/data/1035018/000119312520000327/0001193125-20-000327-index-headers.html"
+    )
+
+
+def test_filename2accession_number():
+    assert "0001193125-20-000327" == idx_filename2accession_number(
+        "edgar/data/1035018/0001193125-20-000327.txt"
+    )
+    assert "0001193125-20-000327" == idx_filename2accession_number(
+        "edgar/data/1035018/000119312520000327/somestuff_485bpos.htm"
+    )
