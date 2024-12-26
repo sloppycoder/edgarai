@@ -48,7 +48,7 @@ def default_text_converter():
     return converter
 
 
-def trim_html_content(filing_html_path: str) -> str:
+def _trim_html_content(filing_html_path: str) -> str:
     """
     remove the hidden div and convert the rest of html into text
     """
