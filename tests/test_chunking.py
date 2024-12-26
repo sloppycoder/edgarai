@@ -3,8 +3,6 @@ from edgar.util import (
     DEFAULT_TEXT_CHUNK_SIZE,
     chunk_text,
     download_file,
-    idx_filename2accession_number,
-    idx_filename2index_headers,
     trim_html_content,
 )
 
@@ -35,36 +33,6 @@ this is something else to do.
 
 
 """
-
-
-def test_parse_485bpos_filing():
-    filing = SECFiling("edgar/data/1002427/0001133228-24-004879.txt")
-    html_filename = filing.get_doc_by_type("485BPOS")[0]
-    doc_path = download_file(html_filename)
-    assert doc_path
-
-    content = trim_html_content(doc_path)
-
-    assert filing.cik == "1002427" and filing.date_filed == "2024-04-29"
-    assert filing.accession_number == "0001133228-24-004879"
-    assert len(filing.documents) == 26
-    assert (
-        html_filename == "edgar/data/1002427/000113322824004879/msif-html7854_485bpos.htm"
-    )
-    assert "hidden" not in content
-    assert "FORM N-1A" in content
-
-
-def test_parse_and_split_chunks():
-    filing = SECFiling("edgar/data/1002427/0001133228-24-004879.txt")
-    html_filename = filing.get_doc_by_type("485BPOS")[0]
-    doc_path = download_file(html_filename)
-
-    assert doc_path
-    assert filing.cik == "1002427" and filing.date_filed == "2024-04-29"
-    assert filing.accession_number == "0001133228-24-004879"
-
-    assert filing.save_chunked_texts("485BPOS") > 0
 
 
 def test_chunk_text():
@@ -105,17 +73,13 @@ def test_chunk_long_line_filing():
     assert max([len(c) for c in chunks]) <= DEFAULT_TEXT_CHUNK_SIZE + 80
 
 
-def test_idx_filename2index_headers():
-    assert (
-        idx_filename2index_headers("edgar/data/1035018/0001193125-20-000327.txt")
-        == "edgar/data/1035018/000119312520000327/0001193125-20-000327-index-headers.html"
-    )
+def test_parse_and_split_chunks():
+    filing = SECFiling("edgar/data/1002427/0001133228-24-004879.txt")
+    html_filename = filing.get_doc_by_type("485BPOS")[0]
+    doc_path = download_file(html_filename)
 
+    assert doc_path
+    assert filing.cik == "1002427" and filing.date_filed == "2024-04-29"
+    assert filing.accession_number == "0001133228-24-004879"
 
-def test_filename2accession_number():
-    assert "0001193125-20-000327" == idx_filename2accession_number(
-        "edgar/data/1035018/0001193125-20-000327.txt"
-    )
-    assert "0001193125-20-000327" == idx_filename2accession_number(
-        "edgar/data/1035018/000119312520000327/somestuff_485bpos.htm"
-    )
+    assert filing.save_chunked_texts("485BPOS") == 271

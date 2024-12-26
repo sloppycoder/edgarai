@@ -97,7 +97,7 @@ class SECFiling:
                 "content": content,
                 "chunk_num": chunk_num,
             }
-            for content, chunk_num in enumerate(chunks)
+            for chunk_num, content in enumerate(chunks)
         ]
 
         with bigquery.Client() as bq_client:
@@ -108,7 +108,7 @@ class SECFiling:
 
             errors = bq_client.insert_rows_json(output_table_ref, rows_to_insert)
             if errors:
-                raise FilingExceptin(f"Failed to insert rows: {errors}")
+                raise FilingExceptin(f"Failed to insert rows: {errors[:10]}")
 
             n_count = len(rows_to_insert)
             logging.info(f"Inserted {n_count} rows into {output_table_ref}")
