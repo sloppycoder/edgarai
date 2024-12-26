@@ -17,49 +17,64 @@ gcloud config set compute/region us-central1
 # create the bucket
 gsutil mb -l us-central1 -b on -p edgar-ai gs://edgar_666/
 
-# prepare secret word for triggering, as a crude security mechanism
-openssl rand -hex 16 > .secret_word
-export SECRET_WORD=$(cat .secret_word)
-echo $SECRET_WORD
+# create pub/sub topic
 
 # deploy the functions
-gcloud functions deploy load_edgar_idx \
-  --gen2 \
-  --region us-central1 \
-  --runtime python312 \
-  --timeout 180s \
-  --source . \
-  --trigger-http \
-  --entry-point load_idx_handler \
-  --allow-unauthenticated \
-  --set-env-vars="GCS_BUCKET_NAME=edgar_666,SECRET_WORD=${SECRET_WORD}"
-
-# drop all files and table and start from scratch
-gsutil -m rm -r  gs://edgar_666/cache
-bq query --use_legacy_sql=false "drop table edgar-ai.edgar.master_idx"
-
-# run trigger script
-curl $(gcloud functions describe load_edgar_idx --format 'value(url)')\?year=2020\&qtr=1\&word=$SECRET_WORD
-
-# check results
-gsutil ls -lr  gs://edgar_666/cache
-bq query --use_legacy_sql=false "select count(*) from edgar-ai.edgar.master_idx where accession_number is null"
-
-
-# chunk
-gcloud functions deploy chunk_one_filing \
+gcloud functions deploy edgar_trigger \
   --gen2 \
   --region us-central1 \
   --runtime python312 \
   --memory 1G \
   --timeout 180s \
   --source . \
-  --trigger-http \
-  --entry-point chunk_one_filing \
-  --allow-unauthenticated \
-  --set-env-vars="GCS_BUCKET_NAME=edgar_666,SECRET_WORD=${SECRET_WORD}"
+  --trigger-topic edgar-test \
+  --entry-point edgar_trigger \
+  --set-env-vars="GCS_BUCKET_NAME=edgar_666"
 
-# test
-curl $(gcloud functions describe chunk_one_filing --format 'value(url)')\?filename=edgar/data/1002427/0001133228-24-004879.txt\&word=$SECRET_WORD
+# trigger
+curl -m 190 -X POST $(gcloud functions describe edgar_trigger --format 'value(url)') \
+-H "Authorization: bearer $(gcloud auth print-identity-token)" \
+-H "Content-Type: application/json" \
+-H "ce-id: 1234567890" \
+-H "ce-specversion: 1.0" \
+-H "ce-type: google.cloud.pubsub.topic.v1.messagePublished" \
+-H "ce-time: 2020-08-08T00:11:44.895529672Z" \
+-H "ce-source: //pubsub.googleapis.com/projects/edgar-ai/topics/edgar-test" \
+-d '{
+  "message": {
+    "attributes" :{
+        "function":"load_master_idx",
+        "year":"2021",
+        "quarter": "1"
+    },
+    "data": "SGVsbG8gV29ybGQ=",
+    "_comment": "data is base64 encoded string of '\''Hello World'\''"
+  }
+}'
+
+curl -m 190 -X POST $(gcloud functions describe edgar_trigger --format 'value(url)') \
+-H "Authorization: bearer $(gcloud auth print-identity-token)" \
+-H "Content-Type: application/json" \
+-H "ce-id: 1234567890" \
+-H "ce-specversion: 1.0" \
+-H "ce-type: google.cloud.pubsub.topic.v1.messagePublished" \
+-H "ce-time: 2020-08-08T00:11:44.895529672Z" \
+-H "ce-source: //pubsub.googleapis.com/projects/edgar-ai/topics/edgar-test" \
+-d '{
+  "message": {
+    "attributes" :{
+        "function":"chunk_one_filing",
+        "filename":"edgar/data/1002427/0001133228-24-004879.txt"
+    },
+    "data": "SGVsbG8gV29ybGQ=",
+    "_comment": "data is base64 encoded string of '\''Hello World'\''"
+  }
+}'
+
+# check results
+gsutil ls -lr  gs://edgar_666/cache
+bq query --use_legacy_sql=false "select count(*) from edgar-ai.edgar.master_idx where accession_number is null"
+
+
 
 ```

@@ -1,13 +1,10 @@
 import logging
 import os
-import random
 import sys
 
 import functions_framework
-from flask import jsonify
 
 from edgar import chunk_filing, load_master_idx
-from edgar.util import idx_filename2accession_number
 
 # Initialize logging
 app_log_level = getattr(logging, os.environ.get("LOG_LEVEL", "").upper(), logging.INFO)
@@ -17,63 +14,36 @@ logging.basicConfig(
 # adjust log level for modules in our app
 # in order not to display debug messages from packages which is quite noisy
 logging.getLogger("edgar").setLevel(app_log_level)
-logging.getLogger("gcp_healper").setLevel(app_log_level)
+logging.getLogger("gcp_helper").setLevel(app_log_level)
 
-# a crude mechanism to prevent triggering by someone unknown.
-# the default random bytes will not be displayed, thus the function
-# cannot be triggered
-secret_word = os.environ.get("SECRET_WORD", random.randbytes(10).hex())
+logger = logging.getLogger(__name__)
+logging.getLogger(__name__).setLevel(app_log_level)
 
 
-@functions_framework.http
-def load_idx_handler(request):
-    """HTTP Cloud Function to download EDGAR index file and save to Cloud Storage."""
-    year = request.args.get("year")
-    qtr = request.args.get("qtr")
-    word = request.args.get("word")
+@functions_framework.cloud_event
+def edgar_trigger(cloud_event):
+    event = cloud_event.data
+    logger.info(f"edgar_trigger received {event}")
 
-    if not word or word != secret_word:
-        return jsonify({"error": "Invalid secret word"}), 403
+    attrs = event.get("message").get("attributes")
+    func_name = attrs.get("function")
 
-    if not year or not qtr:
-        return jsonify({"error": "Invalid year and qtr"}), 400
+    if func_name == "load_master_idx":
+        year = attrs.get("year")
+        qtr = attrs.get("quarter")
 
-    n_rows = load_master_idx(int(year), int(qtr))
-    if n_rows is not None:
-        return jsonify(
-            {"message": f"{n_rows} uploaded to index table for {year} QTR{qtr}"},
-        ), 200
-    else:
-        return jsonify(
-            {"error": f"Unable to uploaded index for {year} QTR{qtr}"},
-        ), 400
+        if not year or not qtr:
+            logger.info(f"Invalid year/quarter {year}/{qtr}")
+            return
 
+        n_rows = load_master_idx(int(year), int(qtr))
+        logger.info(f"{n_rows} uploaded to index table for {year} QTR{qtr}")
 
-@functions_framework.http
-def chunk_one_filing(request):
-    """
-    HTTP Cloud Function to download a SEC filing, find the main html file
-    then split the text into chunks
-    """
-    filename = request.args.get("filename")
-    word = request.args.get("word")
+    elif func_name == "chunk_one_filing":
+        filename = attrs.get("filename")
 
-    if not word or word != secret_word:
-        return jsonify({"error": "Invalid secret word"}), 403
-
-    if not filename or len(idx_filename2accession_number(filename)) != 20:
-        return jsonify({"error": "Invalid filename"}), 400
-
-    n_chunks = chunk_filing(filename, "485BPOS")
-
-    if n_chunks > 0:
-        return jsonify(
-            {"message": f"{n_chunks} chunks saved"},
-        ), 200
-    else:
-        return jsonify(
-            {"error": "Error. check the logs"},
-        ), 400
+        n_chunks = chunk_filing(filename, "485BPOS")
+        logger.info(f"{n_chunks} chunks saved")
 
 
 if __name__ == "__main__":
