@@ -3,16 +3,18 @@ from datetime import datetime
 
 from google.cloud import bigquery
 
+logger = logging.getLogger(__name__)
+
 
 def create_idx_table(bq_client: bigquery.Client, dataset_id: str, table_id: str) -> bool:
     """Create a BigQuery table if it does not exist."""
     table_ref = f"{bq_client.project}.{dataset_id}.{table_id}"
     try:
         bq_client.get_table(table_ref)
-        logging.debug(f"Table {table_ref} already exists.")
+        logger.debug(f"Table {table_ref} already exists.")
         return False
     except Exception:
-        logging.debug(f"Table {table_ref} does not exist. Creating table...")
+        logger.debug(f"Table {table_ref} does not exist. Creating table...")
         bq_client.create_table(
             bigquery.Table(
                 table_ref,
@@ -31,7 +33,7 @@ def create_idx_table(bq_client: bigquery.Client, dataset_id: str, table_id: str)
                 ],
             )
         )
-        logging.info(f"Table {table_ref} created.")
+        logger.info(f"Table {table_ref} created.")
         return True
 
 
@@ -58,7 +60,7 @@ def load_idx_to_bigquery(
         autodetect=True,
     )
 
-    logging.info(f"Loading data from {uri} to {temp_table_ref}...")
+    logger.info(f"Loading data from {uri} to {temp_table_ref}...")
 
     job = bq_client.load_table_from_uri(uri, temp_table_ref, job_config=job_config)
     job.result()
@@ -90,14 +92,14 @@ def load_idx_to_bigquery(
         REGEXP_EXTRACT(S.string_field_4, r'(\d{{10}}-\d{{2}}-\d{{6}})')
     )
     """
-    logging.debug(merge_sql)
+    logger.debug(merge_sql)
     job = bq_client.query(merge_sql)
     job.result()
     rows_affected = job.num_dml_affected_rows
-    logging.info(f"rows merged:{rows_affected}")
+    logger.info(f"rows merged:{rows_affected}")
 
     if not keep_temp_table:
         bq_client.delete_table(temp_table_ref)
-        logging.debug(f"Temporary table {temp_table_ref} deleted.")
+        logger.debug(f"Temporary table {temp_table_ref} deleted.")
 
     return rows_affected

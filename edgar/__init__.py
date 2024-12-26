@@ -6,6 +6,8 @@ from google.cloud import bigquery, storage
 from .index import create_idx_table, load_idx_to_bigquery
 from .util import download_edgar_file
 
+logger = logging.getLogger(__name__)
+
 bucket_name = os.environ.get("GCS_BUCKET_NAME", "")
 cache_dir = os.environ.get("EDGAR_CACHE_DIR", "cache")
 dataset_id = os.environ.get("BQ_DATASET_ID", "edgar")
@@ -33,10 +35,10 @@ def download_file(filename: str, refresh: bool = False) -> str | None:
 
     if blob.exists():
         if not refresh:
-            logging.debug(f"Returning file exists in cache {cache_filename}")
+            logger.debug(f"Returning file exists in cache {cache_filename}")
             return f"gs://{bucket_name}/{cache_filename}"
         else:
-            logging.debug(f"Deleting file {cache_filename}")
+            logger.debug(f"Deleting file {cache_filename}")
             blob.delete()
 
     content = download_edgar_file(filename)
@@ -45,7 +47,7 @@ def download_file(filename: str, refresh: bool = False) -> str | None:
 
     new_blob = bucket.blob(cache_filename)
     new_blob.upload_from_string(content)
-    logging.debug(f"Downloaded {filename} and saved to {cache_filename}.")
+    logger.debug(f"Downloaded {filename} and saved to {cache_filename}.")
 
     return f"gs://{bucket_name}/{cache_filename}"
 
@@ -64,7 +66,7 @@ def load_master_idx(year: int, quarter: int, refresh=False) -> int | None:
         download fails or the year/quarter is invalid.
     """
     if year < 2000 or year > 2026 or quarter < 1 or quarter > 4:
-        logging.info(f"Invalid year/quarter {year}/{quarter}")
+        logger.info(f"Invalid year/quarter {year}/{quarter}")
         return
 
     idx_filename = f"edgar/full-index/{year}/QTR{quarter}/master.idx"

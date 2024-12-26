@@ -12,6 +12,8 @@ from .util import (
 
 DEFAULT_TEXT_CHUNK_SIZE = 3500
 
+logger = logging.getLogger(__name__)
+
 
 class FilingExceptin(Exception):
     pass
@@ -31,7 +33,7 @@ class SECFiling:
         (self.sec_header, self.date_filed, self.documents) = read_index_headers(
             self.index_headers_filename
         )
-        logging.debug(f"initialized SECFiling({self.idx_filename})")
+        logger.debug(f"initialized SECFiling({self.idx_filename})")
 
     def get_doc_by_type(self, doc_type: str) -> list[str]:
         """

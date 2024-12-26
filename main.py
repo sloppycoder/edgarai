@@ -1,11 +1,20 @@
 import logging
 import os
 import random
+import sys
 
 import functions_framework
 from flask import jsonify
 
 from edgar import load_master_idx
+
+# Initialize logging
+app_log_level = getattr(logging, os.environ.get("LOG_LEVEL", "").upper(), logging.INFO)
+logging.basicConfig(level=logging.WARNING, format="%(message)s", stream=sys.stdout)
+# adjust log level for modules in our app
+# in order not to display debug messages from packages which is quite noisy
+logging.getLogger("edgar").setLevel(app_log_level)
+logging.getLogger("sec").setLevel(app_log_level)
 
 # a crude mechanism to prevent triggering by someone unknown.
 # the default random bytes will not be displayed, thus the function
@@ -35,8 +44,3 @@ def load_idx_handler(request):
         return jsonify(
             {"error": f"Unable to uploaded index for {year} QTR{qtr}"},
         ), 400
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level="DEBUG")
-    load_master_idx(2020, 1)

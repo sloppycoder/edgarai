@@ -9,6 +9,8 @@ from google.cloud import storage
 
 from edgar import download_file
 
+logger = logging.getLogger(__name__)
+
 # Document tag contents usually looks like this,
 # FILENAME and DESCRIPTION are optional
 #
@@ -115,7 +117,7 @@ def read_index_headers(index_headers_filename) -> tuple[str, str, list[dict[str,
     # inside there are SGML content of meta data for the filing
     pre = soup.find("pre")
     if pre is None:
-        logging.debug(f"No <pre> tag found in {index_headers_filename}")
+        logger.debug(f"No <pre> tag found in {index_headers_filename}")
         return "", "", []
 
     pre_soup = BeautifulSoup(pre.get_text(), "html.parser")
@@ -144,6 +146,6 @@ def read_index_headers(index_headers_filename) -> tuple[str, str, list[dict[str,
 
         return sec_header_text, date_filed, documents
 
-    logging.info(f"No sec-header found in {index_headers_filename}")
+    logger.info(f"No sec-header found in {index_headers_filename}")
 
     return "", "", []

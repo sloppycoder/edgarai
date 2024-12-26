@@ -1,4 +1,3 @@
-import logging
 import os
 
 from google.api_core import exceptions as google_exceptions
@@ -29,6 +28,5 @@ def _prep_bigquery():
 
     try:
         bq_client.delete_table(idx_table_ref)
-        logging.info("Deleted existing test table")
     except google_exceptions.NotFound:
         pass
