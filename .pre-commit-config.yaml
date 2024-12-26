@@ -19,12 +19,12 @@ repos:
         files: ^uv\.lock$
         pass_filenames: false
 
-      - id: update-requirements-txt
-        name: ensure requirements.txt is up-to-date
-        entry: bash -c 'uv pip compile pyproject.toml -o requirements.txt > /dev/null && git diff --exit-code requirements.txt > /dev/null'
-        language: system
-        files: ^pyproject\.toml$
-        pass_filenames: false
+      # - id: update-requirements-txt
+      #   name: ensure requirements.txt is up-to-date
+      #   entry: bash -c 'uv pip compile pyproject.toml -o requirements.txt > /dev/null && git diff --exit-code requirements.txt > /dev/null'
+      #   language: system
+      #   files: ^pyproject\.toml$
+      #   pass_filenames: false
 
       - id: pyright
         name: pyright

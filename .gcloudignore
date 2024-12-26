@@ -14,4 +14,14 @@
 .gitignore
 tests/
 node_modules
+*.md
+pyproject.toml
+uv.lock
+pyrightconfig.json
+*.yaml
+*.yml
+.vscode
+.python-version
+.ruff_cache/
+source.bat
 #!include:.gitignore

@@ -11,6 +11,7 @@ dependencies = [
     "google-cloud-bigquery>=3.27.0",
     "google-cloud-storage>=2.19.0",
     "html2text>=2024.2.26",
+    "pip>=24.3.1",
     "spacy>=3.8.3",
 ]
 [dependency-groups]

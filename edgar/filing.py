@@ -29,6 +29,36 @@ filing_text_chunks_schema = [
     bigquery.SchemaField("embedding", "FLOAT64", mode="REPEATED"),
 ]
 
+# Document tag contents usually looks like this,
+# FILENAME and DESCRIPTION are optional
+#
+# <DOCUMENT>
+# <TYPE>stuff
+# <SEQUENCE>stuff
+# <FILENAME>stuff
+# <TEXT>
+# Document 1 - file: stuff
+#
+# </DOCUMENT>
+# the regex below tries to parse
+# doc element in index-headers.html
+doc_regex = re.compile(
+    r"""<DOCUMENT>\s*
+<TYPE>(?P<type>.*?)\s*
+<SEQUENCE>(?P<sequence>.*?)\s*
+<FILENAME>(?P<filename>.*?)\s*
+(?:<DESCRIPTION>(?P<description>.*?)\s*)?
+<TEXT>
+(?P<text>.*?)
+</TEXT>""",
+    re.DOTALL | re.VERBOSE | re.IGNORECASE,
+)
+
+
+# in SEC_HEADER
+# FILED AS OF DATE:		20241017
+date_filed_regex = re.compile(r"FILED AS OF DATE:\s*(\d{8})", re.IGNORECASE)
+
 
 class FilingExceptin(Exception):
     pass
@@ -115,35 +145,14 @@ class SECFiling:
             return n_count
 
 
-# Document tag contents usually looks like this,
-# FILENAME and DESCRIPTION are optional
-#
-# <DOCUMENT>
-# <TYPE>stuff
-# <SEQUENCE>stuff
-# <FILENAME>stuff
-# <TEXT>
-# Document 1 - file: stuff
-#
-# </DOCUMENT>
-# the regex below tries to parse
-# doc element in index-headers.html
-doc_regex = re.compile(
-    r"""<DOCUMENT>\s*
-<TYPE>(?P<type>.*?)\s*
-<SEQUENCE>(?P<sequence>.*?)\s*
-<FILENAME>(?P<filename>.*?)\s*
-(?:<DESCRIPTION>(?P<description>.*?)\s*)?
-<TEXT>
-(?P<text>.*?)
-</TEXT>""",
-    re.DOTALL | re.VERBOSE | re.IGNORECASE,
-)
+def chunk_filing(idx_filename: str, form_type: str) -> int:
+    filing = SECFiling(idx_filename)
+    html_filename = filing.get_doc_by_type(form_type)[0]
+    if not html_filename:
+        return 0
 
-
-# in SEC_HEADER
-# FILED AS OF DATE:		20241017
-date_filed_regex = re.compile(r"FILED AS OF DATE:\s*(\d{8})", re.IGNORECASE)
+    n_chunks = filing.save_chunked_texts("485BPOS")
+    return n_chunks
 
 
 def _read_index_headers(index_headers_filename) -> tuple[str, str, list[dict[str, Any]]]:
