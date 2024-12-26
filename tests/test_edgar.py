@@ -55,6 +55,18 @@ def test_parse_485bpos_filing():
     assert "FORM N-1A" in content
 
 
+def test_parse_and_split_chunks():
+    filing = SECFiling("edgar/data/1002427/0001133228-24-004879.txt")
+    html_filename = filing.get_doc_by_type("485BPOS")[0]
+    doc_path = download_file(html_filename)
+
+    assert doc_path
+    assert filing.cik == "1002427" and filing.date_filed == "2024-04-29"
+    assert filing.accession_number == "0001133228-24-004879"
+
+    assert filing.save_chunked_texts("485BPOS") > 0
+
+
 def test_chunk_text():
     test_chunk_size = 400
     chunks = chunk_text(test_text_content, test_chunk_size)

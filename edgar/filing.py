@@ -7,27 +7,27 @@ from typing import Any
 from bs4 import BeautifulSoup
 from google.cloud import bigquery
 
-from gcp_helper import blob_as_text
+from gcp_helper import blob_as_text, ensure_table_exists
 
 from .util import (
+    chunk_text,
     download_file,
     idx_filename2accession_number,
     idx_filename2index_headers,
+    trim_html_content,
 )
 
 logger = logging.getLogger(__name__)
 
 dataset_id = os.environ.get("BQ_DATASET_ID", "edgar")
 
-filing_text_chunks_schema = (
-    [
-        bigquery.SchemaField("accession_number", "STRING", max_length=20),
-        bigquery.SchemaField("chunk_num", "INTEGER"),
-        bigquery.SchemaField("content", "STRING"),
-        bigquery.SchemaField("model", "STRING", mode="NULLABLE", max_length=20),
-        bigquery.SchemaField("embedding", "ARRAY<FLOAT64>", mode="NULLABLE"),
-    ],
-)
+filing_text_chunks_schema = [
+    bigquery.SchemaField("accession_number", "STRING", max_length=20),
+    bigquery.SchemaField("chunk_num", "INTEGER"),
+    bigquery.SchemaField("content", "STRING"),
+    bigquery.SchemaField("model", "STRING", mode="NULLABLE", max_length=32),
+    bigquery.SchemaField("embedding", "FLOAT64", mode="REPEATED"),
+]
 
 
 class FilingExceptin(Exception):
@@ -77,6 +77,42 @@ class SECFiling:
             )
 
         return [str(Path(self.index_headers_filename).parent / path) for path in paths]
+
+    def save_chunked_texts(self, doc_type: str) -> int:
+        docs = self.get_doc_by_type(doc_type)
+        if len(docs) > 1:
+            raise FilingExceptin(
+                f"{self.idx_filename} has more than 1 document of type {doc_type}"
+            )
+
+        doc_path = download_file(docs[0])
+        if not doc_path:
+            raise FilingExceptin(f"Failed to download {self.idx_filename}")
+
+        chunks = chunk_text(trim_html_content(doc_path))
+        # Insert the chunks into the table
+        rows_to_insert = [
+            {
+                "accession_number": self.accession_number,
+                "content": content,
+                "chunk_num": chunk_num,
+            }
+            for content, chunk_num in enumerate(chunks)
+        ]
+
+        with bigquery.Client() as bq_client:
+            output_table_ref = f"{bq_client.project}.{dataset_id}.filing_text_chunks"
+            ensure_table_exists(
+                bq_client, output_table_ref, schema=filing_text_chunks_schema
+            )
+
+            errors = bq_client.insert_rows_json(output_table_ref, rows_to_insert)
+            if errors:
+                raise FilingExceptin(f"Failed to insert rows: {errors}")
+
+            n_count = len(rows_to_insert)
+            logging.info(f"Inserted {n_count} rows into {output_table_ref}")
+            return n_count
 
 
 # Document tag contents usually looks like this,
