@@ -78,3 +78,6 @@ bq query --use_legacy_sql=false "select count(*) from edgar-ai.edgar.master_idx 
 
 
 ```
+
+## Notes
+```requirements.txt``` is now handcrafted, not maintained by UV. This is because spacy 3.8.2 works on Mac but doesn't on Cloud Function. Version 3.7.2 works on Cloud Function but cannot run locally.
