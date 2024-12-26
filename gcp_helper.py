@@ -1,8 +1,12 @@
+import json
 import logging
 import re
+from typing import Any
 
+import google.auth
+from cloudevents.http import CloudEvent
 from google.api_core import exceptions as google_exceptions
-from google.cloud import bigquery, storage
+from google.cloud import bigquery, pubsub_v1, storage
 
 logger = logging.getLogger(__name__)
 
@@ -42,3 +46,39 @@ def ensure_table_exists(bq_client, table_ref, schema):
         table = bigquery.Table(table_ref, schema=schema)
         bq_client.create_table(table)
         logger.info(f"Table {table_ref} created.")
+
+
+def create_cloudevent(attributes: dict[str, Any], data: dict[str, Any]) -> CloudEvent:
+    if "type" not in attributes:
+        attributes["type"] = "edgarai.event.trigger"
+
+    if "source" not in attributes:
+        attributes["source"] = "edgarai.gcp_helper"
+
+    return CloudEvent(attributes, data)
+
+
+def publish_to_pubsub(event: CloudEvent, topic_name: str):
+    """Publishes a CloudEvent to a Pub/Sub topic."""
+
+    _, project_id = google.auth.default()
+
+    if not topic_name or not project_id:
+        return
+
+    publisher = pubsub_v1.PublisherClient()
+    topic_path = publisher.topic_path(project_id, topic_name)
+
+    # Convert CloudEvent to JSON
+    event_attrs = event.get_attributes()
+    event_data = json.dumps(event.get_data()).encode("utf-8")
+
+    # Publish message
+    future = publisher.publish(
+        topic_path,
+        data=event_data,
+        specversion=event_attrs["specversion"],
+        type=event_attrs["type"],
+        source=event_attrs["source"],
+    )
+    logger.debug(f"Published CloudEvent with message ID: {future.result()}")

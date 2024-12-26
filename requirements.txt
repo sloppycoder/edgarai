@@ -1,7 +1,9 @@
 beautifulsoup4>=4.12.3
 functions-framework>=3.8.2
+cloudevents>=1.11.0
 google-cloud-bigquery>=3.27.0
 google-cloud-storage>=2.19.0
+google-cloud-pubsub>=2.27.1
 html2text>=2024.2.26
 spacy==3.7.2
 en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.0/en_core_web_sm-3.7.0-py3-none-any.whl

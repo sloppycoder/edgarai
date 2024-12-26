@@ -27,49 +27,13 @@ gcloud functions deploy edgar_trigger \
   --memory 1G \
   --timeout 180s \
   --source . \
-  --trigger-topic edgar-test \
+  --trigger-topic edgarai-request \
   --entry-point edgar_trigger \
-  --set-env-vars="GCS_BUCKET_NAME=edgar_666"
+  --set-env-vars="GCS_BUCKET_NAME=edgar_666,RESPONSE_TOPIC=edgarai-response"
 
-# trigger
-curl -m 190 -X POST $(gcloud functions describe edgar_trigger --format 'value(url)') \
--H "Authorization: bearer $(gcloud auth print-identity-token)" \
--H "Content-Type: application/json" \
--H "ce-id: 1234567890" \
--H "ce-specversion: 1.0" \
--H "ce-type: google.cloud.pubsub.topic.v1.messagePublished" \
--H "ce-time: 2020-08-08T00:11:44.895529672Z" \
--H "ce-source: //pubsub.googleapis.com/projects/edgar-ai/topics/edgar-test" \
--d '{
-  "message": {
-    "attributes" :{
-        "function":"load_master_idx",
-        "year":"2021",
-        "quarter": "1"
-    },
-    "data": "SGVsbG8gV29ybGQ=",
-    "_comment": "data is base64 encoded string of '\''Hello World'\''"
-  }
-}'
-
-curl -m 190 -X POST $(gcloud functions describe edgar_trigger --format 'value(url)') \
--H "Authorization: bearer $(gcloud auth print-identity-token)" \
--H "Content-Type: application/json" \
--H "ce-id: 1234567890" \
--H "ce-specversion: 1.0" \
--H "ce-type: google.cloud.pubsub.topic.v1.messagePublished" \
--H "ce-time: 2020-08-08T00:11:44.895529672Z" \
--H "ce-source: //pubsub.googleapis.com/projects/edgar-ai/topics/edgar-test" \
--d '{
-  "message": {
-    "attributes" :{
-        "function":"chunk_one_filing",
-        "filename":"edgar/data/1002427/0001133228-24-004879.txt"
-    },
-    "data": "SGVsbG8gV29ybGQ=",
-    "_comment": "data is base64 encoded string of '\''Hello World'\''"
-  }
-}'
+# trigger=
+python scripts/trigger.py "idx|2020|1"
+python scripts/trigger.py "chunk|edgar/data/1002427/0001133228-24-004879.txt"
 
 # check results
 gsutil ls -lr  gs://edgar_666/cache

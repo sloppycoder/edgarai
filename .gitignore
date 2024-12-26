@@ -25,3 +25,4 @@ cdk.out
 # service account key
 edgar-ai-dev.json
 .secret_word
+t.py

@@ -7,11 +7,14 @@ readme = "README.md"
 requires-python = ">= 3.12"
 dependencies = [
     "beautifulsoup4>=4.12.3",
+    "cloudevents>=1.11.0",
     "functions-framework>=3.8.2",
     "google-cloud-bigquery>=3.27.0",
+    "google-cloud-pubsub>=2.27.1",
     "google-cloud-storage>=2.19.0",
     "html2text>=2024.2.26",
     "pip>=24.3.1",
+    "python-dotenv>=1.0.1",
     "spacy>=3.8.3",
 ]
 [dependency-groups]
@@ -37,7 +40,7 @@ filterwarnings = [
     "ignore::DeprecationWarning",
 ]
 env_override_existing_values = 1
-env_files = [".env"]
+env_files = [".env.test"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 
