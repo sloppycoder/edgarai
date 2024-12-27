@@ -24,7 +24,7 @@ gcloud functions deploy edgar_trigger \
   --gen2 \
   --region us-central1 \
   --runtime python312 \
-  --memory 1G \
+  --memory 512M \
   --timeout 180s \
   --source . \
   --trigger-topic edgarai-request \

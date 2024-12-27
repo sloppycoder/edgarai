@@ -25,8 +25,6 @@ filing_text_chunks_schema = [
     bigquery.SchemaField("accession_number", "STRING", max_length=20),
     bigquery.SchemaField("chunk_num", "INTEGER"),
     bigquery.SchemaField("content", "STRING"),
-    bigquery.SchemaField("model", "STRING", mode="NULLABLE", max_length=32),
-    bigquery.SchemaField("embedding", "FLOAT64", mode="REPEATED"),
 ]
 
 # Document tag contents usually looks like this,

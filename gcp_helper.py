@@ -58,13 +58,13 @@ def create_cloudevent(attributes: dict[str, Any], data: dict[str, Any]) -> Cloud
     return CloudEvent(attributes, data)
 
 
-def publish_to_pubsub(event: CloudEvent, topic_name: str):
+def publish_to_pubsub(event: CloudEvent, topic_name: str) -> str | None:
     """Publishes a CloudEvent to a Pub/Sub topic."""
 
     _, project_id = google.auth.default()
 
     if not topic_name or not project_id:
-        return
+        return None
 
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(project_id, topic_name)
@@ -81,4 +81,5 @@ def publish_to_pubsub(event: CloudEvent, topic_name: str):
         type=event_attrs["type"],
         source=event_attrs["source"],
     )
-    logger.debug(f"Published CloudEvent with message ID: {future.result()}")
+    msg_id = future.result()
+    return msg_id
