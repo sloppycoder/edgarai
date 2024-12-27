@@ -71,15 +71,26 @@ def publish_message(arg: str, wait: bool = False):
     event = None
     if arg.startswith("idx"):
         parts = arg.split("|")
-        if len(parts) == 3:
+        year = parts[1]
+        if year <= 2000 or year >= 2028:
+            raise ValueError(f"Invalid year: {year}")
+
+        quarters = [parts[2]] if len(parts[2]) == 3 else [1, 2, 3, 4]
+
+        for qtr in quarters:
             event = create_cloudevent(
                 attributes={},
                 data={
                     "function": "load_master_idx",
-                    "year": parts[1],
-                    "quarter": parts[2],
+                    "year": year,
+                    "quarter": qtr,
                 },
             )
+            req_id = publish_to_pubsub(event, topic_name)
+            print(f"published {req_id}")
+            if wait:
+                wait_for_response(req_id)
+
     elif arg.startswith("chunk"):
         parts = arg.split("|")
         if len(parts) == 2:
@@ -90,18 +101,11 @@ def publish_message(arg: str, wait: bool = False):
                     "filename": parts[1],
                 },
             )
-    else:
-        event = create_cloudevent(
-            attributes={},
-            data=json.loads(arg),
-        )
 
-    if event:
-        print(event)
-        req_id = publish_to_pubsub(event, topic_name)
-        print(f"published {req_id}")
-        if wait:
-            wait_for_response(req_id)
+            req_id = publish_to_pubsub(event, topic_name)
+            print(f"published {req_id}")
+            if wait:
+                wait_for_response(req_id)
     else:
         print(f"Invalid argument: {arg}")
 
