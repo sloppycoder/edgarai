@@ -63,7 +63,7 @@ def wait_for_response(req_id: str, timeout_seconds: int = 90) -> None:
     streaming_pull_future.cancel()
 
 
-def publish_message(arg):
+def publish_message(arg: str, wait: bool = False):
     topic_name = os.environ.get("REQUEST_TOPIC")
     if not topic_name:
         raise ValueError("REQUEST_TOPIC environment variable is not set")
@@ -100,7 +100,8 @@ def publish_message(arg):
         print(event)
         req_id = publish_to_pubsub(event, topic_name)
         print(f"published {req_id}")
-        wait_for_response(req_id)
+        if wait:
+            wait_for_response(req_id)
     else:
         print(f"Invalid argument: {arg}")
 
@@ -110,4 +111,6 @@ if __name__ == "__main__":
         print(f"Usage: {sys.argv[0]} <data json string>")
         sys.exit
 
-    publish_message(sys.argv[1])
+    wait_flag = len(sys.argv) >= 3 and sys.argv[2] == "-w"
+
+    publish_message(sys.argv[1], wait=wait_flag)

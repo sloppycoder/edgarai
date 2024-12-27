@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 
+import flask
 import functions_framework
 
 from edgar import chunk_filing, load_master_idx
@@ -22,10 +23,10 @@ logging.getLogger("gcp_helper").setLevel(app_log_level)
 logger = logging.getLogger(__name__)
 logging.getLogger(__name__).setLevel(app_log_level)
 
-response_topic = os.environ.get("RESPONSE_TOPIC", "edgarai-response")
-
 
 def publish_response(req_id: str, status: str, message: str = "{}"):
+    response_topic = os.environ.get("RESPONSE_TOPIC", "edgarai-response")
+
     event = create_cloudevent(
         attributes={},
         data={
@@ -38,7 +39,7 @@ def publish_response(req_id: str, status: str, message: str = "{}"):
 
 
 @functions_framework.cloud_event
-def edgar_trigger(cloud_event):
+def edgar_processor(cloud_event):
     logger.info(f"edgar_trigger received {cloud_event}")
 
     event = cloud_event.data
@@ -72,3 +73,43 @@ def edgar_trigger(cloud_event):
 
     else:
         publish_response(req_id, "ERROR", f"Cannot process {message}")
+
+
+@functions_framework.http
+def trigger_chunk_filing(request: flask.Request):
+    """
+    This function is intended to be invoked as a Remote Function in BigQuery
+    thus the logic
+    """
+    request_topic = os.environ.get("REQUEST_TOPIC", "edgarai-request")
+
+    try:
+        replies = []
+        request_json = request.get_json()
+
+        logger.info(f"http_trigger received {request_json}")
+
+        calls = request_json["calls"]
+        for params in calls:
+            filename = params[0]
+            if not filename:
+                replies.append("ERROR: filename not set")
+                continue
+
+            event = create_cloudevent(
+                attributes={},
+                data={
+                    "function": "chunk_one_filing",
+                    "filename": filename,
+                },
+            )
+
+            msg_id = publish_to_pubsub(event, request_topic)
+            replies.append(
+                f"SUCCESS: published {msg_id} to trigger chunk_one_filing {filename}"
+            )
+
+        return flask.jsonify({"replies": replies})
+
+    except Exception as e:
+        return flask.jsonify({"errorMessage": str(e)}), 400

@@ -20,7 +20,7 @@ gsutil mb -l us-central1 -b on -p edgar-ai gs://edgar_666/
 # create pub/sub topic
 
 # deploy the functions
-gcloud functions deploy edgar_trigger \
+gcloud functions deploy edgar_processor \
   --gen2 \
   --region us-central1 \
   --runtime python312 \
@@ -28,12 +28,22 @@ gcloud functions deploy edgar_trigger \
   --timeout 180s \
   --source . \
   --trigger-topic edgarai-request \
-  --entry-point edgar_trigger \
+  --entry-point edgar_processor \
   --set-env-vars="GCS_BUCKET_NAME=edgar_666,RESPONSE_TOPIC=edgarai-response"
 
+gcloud functions deploy trigger_chunk_filing \
+  --gen2 \
+  --region us-central1 \
+  --runtime python312 \
+  --source . \
+  --trigger-http \
+  --no-allow-unauthenticated \
+  --entry-point trigger_chunk_filing \
+  --set-env-vars="GCS_BUCKET_NAME=edgar_666,REQUEST_TOPIC=edgarai-request,RESPONSE_TOPIC=edgarai-response"
+
 # trigger=
-python scripts/trigger.py "idx|2020|1"
-python scripts/trigger.py "chunk|edgar/data/1002427/0001133228-24-004879.txt"
+python scripts/trigger.py "idx|2020|1" -w
+python scripts/trigger.py "chunk|edgar/data/1002427/0001133228-24-004879.txt" -w
 
 # check results
 gsutil ls -lr  gs://edgar_666/cache
