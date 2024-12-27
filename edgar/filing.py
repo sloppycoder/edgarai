@@ -22,9 +22,11 @@ logger = logging.getLogger(__name__)
 dataset_id = os.environ.get("BQ_DATASET_ID", "edgar")
 
 filing_text_chunks_schema = [
-    bigquery.SchemaField("accession_number", "STRING", max_length=20),
-    bigquery.SchemaField("chunk_num", "INTEGER"),
-    bigquery.SchemaField("content", "STRING"),
+    bigquery.SchemaField("cik", "STRING", max_length=20, mode="REQUIRED"),
+    bigquery.SchemaField("date_filed", "DATE", mode="REQUIRED"),
+    bigquery.SchemaField("accession_number", "STRING", max_length=20, mode="REQUIRED"),
+    bigquery.SchemaField("chunk_num", "INTEGER", mode="REQUIRED"),
+    bigquery.SchemaField("content", "STRING", mode="REQUIRED"),
 ]
 
 # Document tag contents usually looks like this,
@@ -118,9 +120,12 @@ class SECFiling:
             raise FilingExceptin(f"Failed to download {self.idx_filename}")
 
         chunks = chunk_text(trim_html_content(doc_path))
+
         # Insert the chunks into the table
         rows_to_insert = [
             {
+                "cik": self.cik,
+                "date_filed": self.date_filed,
                 "accession_number": self.accession_number,
                 "content": content,
                 "chunk_num": chunk_num,
@@ -133,6 +138,14 @@ class SECFiling:
             ensure_table_exists(
                 bq_client, output_table_ref, schema=filing_text_chunks_schema
             )
+
+            delete_query = f"""
+            DELETE FROM {output_table_ref}
+            WHERE accession_number = '{self.accession_number}'
+            AND cik = '{self.cik}'
+            """
+            job = bq_client.query(delete_query)
+            job.result()
 
             errors = bq_client.insert_rows_json(output_table_ref, rows_to_insert)
             if errors:

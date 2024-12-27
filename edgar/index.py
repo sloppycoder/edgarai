@@ -15,11 +15,11 @@ bucket_name = os.environ.get("GCS_BUCKET_NAME", "")
 cache_dir = os.environ.get("EDGAR_CACHE_DIR", "cache")
 
 master_idx_schema = [
-    bigquery.SchemaField("cik", "STRING", max_length=10),
-    bigquery.SchemaField("company_name", "STRING", max_length=150),
-    bigquery.SchemaField("form_type", "STRING", max_length=20),
-    bigquery.SchemaField("date_filed", "DATE"),
-    bigquery.SchemaField("filename", "STRING", max_length=100),
+    bigquery.SchemaField("cik", "STRING", max_length=10, mode="REQUIRED"),
+    bigquery.SchemaField("company_name", "STRING", max_length=150, mode="REQUIRED"),
+    bigquery.SchemaField("form_type", "STRING", max_length=20, mode="REQUIRED"),
+    bigquery.SchemaField("date_filed", "DATE", mode="REQUIRED"),
+    bigquery.SchemaField("filename", "STRING", max_length=100, mode="REQUIRED"),
     bigquery.SchemaField(
         "accession_number",
         "STRING",
