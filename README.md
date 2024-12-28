@@ -1,4 +1,4 @@
-#
+# BigQuery Helper Functions
 
 ## Deploy
 
@@ -44,9 +44,12 @@ gcloud functions deploy trigger_processor \
 
 
 ```shell
-# trigger function and check results
-# do the setup in BigQuery and then invoke function using SQL
-#
+# start subscriber for response messages from functions
+python -m gcp_helper
+
+
+# Do the create remote function setup in BigQuery and
+# then invoke function using SQL
 select `edgar`.trigger_processor('load_master_idx', '2020|1');
 
  select `edgar`.trigger_processor(
