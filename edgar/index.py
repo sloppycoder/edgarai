@@ -73,7 +73,7 @@ def load_idx_to_bigquery(
 
     the master.idx from EDGAR are basically a CSV file with 9 header lines
     """
-    temp_table_ref = f"{bq_client.project}.{dataset_id}.{table_id}_{short_uuid()}"
+    temp_table_ref = f"{bq_client.project}.{dataset_id}.tmp_index_{short_uuid()}"
     main_table_ref = f"{bq_client.project}.{dataset_id}.{table_id}"
 
     job_config = bigquery.LoadJobConfig(

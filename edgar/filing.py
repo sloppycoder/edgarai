@@ -138,7 +138,7 @@ class SECFiling:
             # Define table references
             output_table_ref = f"{bq_client.project}.{dataset_id}.filing_text_chunks"
             temp_table_ref = (
-                f"{bq_client.project}.{dataset_id}.chunks_{self.cik}_{short_uuid()}"
+                f"{bq_client.project}.{dataset_id}.tmp_chunks_{self.cik}_{short_uuid()}"
             )
 
             # Ensure the main and temp tables exist
