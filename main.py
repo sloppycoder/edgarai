@@ -88,7 +88,7 @@ def edgar_processor(cloud_event):
 
 
 @functions_framework.http
-def trigger_chunk_filing(request: flask.Request):
+def trigger_processor(request: flask.Request):  # noqa: C901
     """
     This function is intended to be invoked as a Remote Function in BigQuery
     thus the logic
@@ -102,25 +102,75 @@ def trigger_chunk_filing(request: flask.Request):
         logger.info(f"http_trigger received {request_json}")
 
         calls = request_json["calls"]
-        for params in calls:
-            cik, filename = params[0], params[1]
-            if not cik or not filename:
-                replies.append("ERROR: cik and filename are required")
+        for call in calls:
+            func_name = call[0].strip()
+            params = [p.strip() for p in call[1].split("|")]
+
+            if func_name == "load_master_idx":
+                year, qtr = params[0], params[1]
+                if not year or not qtr:
+                    replies.append("ERROR: year and qtr are required")
+                    continue
+
+                try:
+                    year = int(year)
+                    if year < 2000 or year > 2030:
+                        raise ValueError
+                except ValueError:
+                    replies.append("ERROR: year must be between 2000 and 2030")
+                    continue
+
+                try:
+                    qtr = int(qtr)
+                    if qtr < 1 or qtr > 4:
+                        raise ValueError
+                except ValueError:
+                    replies.append("ERROR: qurater must be 1 and 4")
+                    continue
+
+                event = create_cloudevent(
+                    attributes={},
+                    data={
+                        "function": "load_master_idx",
+                        "year": year,
+                        "quarter": qtr,
+                    },
+                )
+
+                msg_id = publish_to_pubsub(event, request_topic)
+                replies.append(
+                    f"SUCCESS: published {msg_id} to trigger load_master_idx {year},{qtr}"  # noqa E501
+                )
+
+            elif func_name == "chunk_one_filing":
+                cik, filename = params[0], params[1]
+                if (
+                    not cik
+                    or not filename
+                    or not cik.isdigit()
+                    or not filename.startswith("edgar/")
+                    or not filename.endswith(".txt")
+                ):
+                    replies.append("ERROR: cik and filename are required")
+                    continue
+
+                event = create_cloudevent(
+                    attributes={},
+                    data={
+                        "function": "chunk_one_filing",
+                        "cik": cik,
+                        "filename": filename,
+                    },
+                )
+
+                msg_id = publish_to_pubsub(event, request_topic)
+                replies.append(
+                    f"SUCCESS: published {msg_id} to trigger chunk_one_filing {cik},{filename}"  # noqa E501
+                )
+
+            else:
+                replies.append(f"ERROR: unknown function name {func_name}")
                 continue
-
-            event = create_cloudevent(
-                attributes={},
-                data={
-                    "function": "chunk_one_filing",
-                    "cik": cik,
-                    "filename": filename,
-                },
-            )
-
-            msg_id = publish_to_pubsub(event, request_topic)
-            replies.append(
-                f"SUCCESS: published {msg_id} to trigger chunk_one_filing {cik},{filename}"  # noqa E501
-            )
 
         return flask.jsonify({"replies": replies})
 
