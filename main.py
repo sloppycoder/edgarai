@@ -13,16 +13,16 @@ from gcp_helper import create_cloudevent, publish_to_pubsub
 
 # Initialize logging
 app_log_level = getattr(logging, os.environ.get("LOG_LEVEL", "").upper(), logging.INFO)
+print(f"app_log_level={app_log_level}")
 logging.basicConfig(
     level=logging.INFO, format="%(levelname)s %(message)s", stream=sys.stdout
 )
 # adjust log level for modules in our app
 # in order not to display debug messages from packages which is quite noisy
-logging.getLogger("edgar").setLevel(app_log_level)
-logging.getLogger("gcp_helper").setLevel(app_log_level)
+logging.getLogger("edgar").setLevel(logging.DEBUG)
+logging.getLogger("gcp_helper").setLevel(logging.DEBUG)
 
 logger = logging.getLogger(__name__)
-logging.getLogger(__name__).setLevel(app_log_level)
 
 
 def publish_response(req_id: str, status: str, message: str = "{}"):
