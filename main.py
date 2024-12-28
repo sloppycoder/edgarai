@@ -1,4 +1,5 @@
 import base64
+import datetime
 import json
 import logging
 import os
@@ -30,9 +31,12 @@ def publish_response(req_id: str, status: str, message: str = "{}"):
     event = create_cloudevent(
         attributes={},
         data={
-            "req-id": req_id,
+            "req_id": req_id,
             "status": status,
             "message": message,
+            "timestamp": datetime.datetime.now(datetime.UTC).strftime(
+                "%Y-%m-%dT%H:%M:%SZ"
+            ),
         },
     )
     publish_to_pubsub(event, response_topic)
@@ -67,7 +71,7 @@ def edgar_processor(cloud_event):
     elif func_name == "chunk_one_filing":
         filename = data.get("filename")
         n_chunks = chunk_filing(filename, "485BPOS")
-        msg = f"{n_chunks} chunks saved"
+        msg = f"{n_chunks} chunks saved for {filename}"
         logger.info(msg)
         publish_response(req_id, "SUCCESS" if n_chunks > 0 else "ERROR", msg)
 
