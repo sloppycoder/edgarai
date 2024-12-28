@@ -83,3 +83,7 @@ def test_parse_and_split_chunks():
     assert filing.accession_number == "0001133228-24-004879"
 
     assert filing.save_chunked_texts("485BPOS") == 271
+    # run this twice to make sure we don't get errors like
+    # UPDATE or DELETE statement over table some_table
+    # would affect rows in the streaming buffer, which is not supported
+    assert filing.save_chunked_texts("485BPOS") == 271

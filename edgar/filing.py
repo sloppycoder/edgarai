@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -122,7 +123,7 @@ class SECFiling:
 
         chunks = chunk_text(trim_html_content(doc_path))
 
-        # Insert the chunks into the table
+        # Prepare rows to insert into the temp table
         rows_to_insert = [
             {
                 "cik": self.cik,
@@ -135,25 +136,54 @@ class SECFiling:
         ]
 
         with bigquery.Client() as bq_client:
+            # Define table references
+            timestamp = datetime.now().strftime("%H%M%S")
             output_table_ref = f"{bq_client.project}.{dataset_id}.filing_text_chunks"
+            temp_table_ref = (
+                f"{bq_client.project}.{dataset_id}.chunks_{self.cik}_{timestamp}"
+            )
+
+            # Ensure the main and temp tables exist
             ensure_table_exists(
                 bq_client, output_table_ref, schema=filing_text_chunks_schema
             )
+            ensure_table_exists(
+                bq_client, temp_table_ref, schema=filing_text_chunks_schema
+            )
 
-            delete_query = f"""
-            DELETE FROM {output_table_ref}
-            WHERE accession_number = '{self.accession_number}'
-            AND cik = '{self.cik}'
+            # Insert rows into the temp table
+            errors = bq_client.insert_rows_json(temp_table_ref, rows_to_insert)
+            if errors:
+                raise FilingExceptin(
+                    f"Failed to insert rows into temp table: {errors[:10]}"
+                )
+
+            # Merge temp table into the main table
+            merge_query = f"""
+            MERGE INTO {output_table_ref} AS main
+            USING {temp_table_ref} AS temp
+            ON main.cik = temp.cik
+            AND main.accession_number = temp.accession_number
+            AND main.chunk_num = temp.chunk_num
+            WHEN MATCHED THEN UPDATE SET
+                main.date_filed = temp.date_filed,
+                main.content = temp.content
+            WHEN NOT MATCHED THEN INSERT (
+                cik, date_filed, accession_number,
+                chunk_num, content
+            ) VALUES (
+                temp.cik, temp.date_filed, temp.accession_number,
+                temp.chunk_num, temp.content
+            )
             """
-            job = bq_client.query(delete_query)
+            job = bq_client.query(merge_query)
             job.result()
 
-            errors = bq_client.insert_rows_json(output_table_ref, rows_to_insert)
-            if errors:
-                raise FilingExceptin(f"Failed to insert rows: {errors[:10]}")
+            # Clean up the temporary table
+            bq_client.delete_table(temp_table_ref, not_found_ok=True)
 
             n_count = len(rows_to_insert)
-            logging.info(f"Inserted {n_count} rows into {output_table_ref}")
+            logging.info(f"Inserted and merged {n_count} rows into {output_table_ref}")
             return n_count
 
 
