@@ -174,8 +174,11 @@ class SECFiling:
                 temp.chunk_num, temp.content
             )
             """
+            logger.debug(merge_query)
             job = bq_client.query(merge_query)
             job.result()
+            rows_affected = job.num_dml_affected_rows
+            logger.info(f"rows merged:{rows_affected}")
 
             # Clean up the temporary table
             bq_client.delete_table(temp_table_ref, not_found_ok=True)
