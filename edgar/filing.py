@@ -65,11 +65,12 @@ class FilingExceptin(Exception):
 
 
 class SECFiling:
-    def __init__(self, idx_filename: str):
+    def __init__(self, cik: str, idx_filename: str):
+        # sometimes a same filename is used by several CIKs
         # filename as in master.idx
         # e.g. edgar/data/106830/0001683863-20-000050.txt
+        self.cik = cik
         self.idx_filename = idx_filename
-        self.cik = idx_filename.split("/")[2]
         self.accession_number = idx_filename2accession_number(idx_filename)
 
         # idx filename for the filing index-headers file
@@ -78,7 +79,7 @@ class SECFiling:
         (self.sec_header, self.date_filed, self.documents) = _read_index_headers(
             self.index_headers_filename
         )
-        logger.debug(f"initialized SECFiling({self.idx_filename})")
+        logger.debug(f"initialized SECFiling({self.cik},{self.idx_filename})")
 
     def get_doc_by_type(self, doc_type: str) -> list[str]:
         """
@@ -156,8 +157,8 @@ class SECFiling:
             return n_count
 
 
-def chunk_filing(idx_filename: str, form_type: str) -> int:
-    filing = SECFiling(idx_filename)
+def chunk_filing(cik: str, idx_filename: str, form_type: str) -> int:
+    filing = SECFiling(cik, idx_filename)
     html_filename = filing.get_doc_by_type(form_type)[0]
     if not html_filename:
         return 0

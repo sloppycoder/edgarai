@@ -48,7 +48,7 @@ def test_chunk_text():
 
 def test_chunk_large_filing():
     # this filing is very large, has 142 chunks
-    filing = SECFiling("edgar/data/1314414/0001580642-20-000131.txt")
+    filing = SECFiling("1314414", "edgar/data/1314414/0001580642-20-000131.txt")
     html_filename = filing.get_doc_by_type("485BPOS")[0]
     doc_path = download_file(html_filename)
     assert doc_path
@@ -63,7 +63,7 @@ def test_chunk_large_filing():
 
 def test_chunk_long_line_filing():
     # this filing has only 2 lines, one of them is 256k long (why?)
-    filing = SECFiling("edgar/data/1658158/0001528621-20-000176.txt")
+    filing = SECFiling("1658158", "edgar/data/1658158/0001528621-20-000176.txt")
     html_filename = filing.get_doc_by_type("485BPOS")[0]
     doc_path = download_file(html_filename)
     assert doc_path
@@ -74,12 +74,12 @@ def test_chunk_long_line_filing():
 
 
 def test_parse_and_split_chunks():
-    filing = SECFiling("edgar/data/1002427/0001133228-24-004879.txt")
+    filing = SECFiling("1002427", "edgar/data/1002427/0001133228-24-004879.txt")
     html_filename = filing.get_doc_by_type("485BPOS")[0]
     doc_path = download_file(html_filename)
 
     assert doc_path
-    assert filing.cik == "1002427" and filing.date_filed == "2024-04-29"
+    assert filing.date_filed == "2024-04-29"
     assert filing.accession_number == "0001133228-24-004879"
 
     assert filing.save_chunked_texts("485BPOS") == 271
