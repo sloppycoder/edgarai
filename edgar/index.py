@@ -1,10 +1,9 @@
 import logging
 import os
-from datetime import datetime
 
 from google.cloud import bigquery
 
-from gcp_helper import ensure_table_exists
+from gcp_helper import ensure_table_exists, short_uuid
 
 from .util import download_file
 
@@ -74,8 +73,7 @@ def load_idx_to_bigquery(
 
     the master.idx from EDGAR are basically a CSV file with 9 header lines
     """
-    timestamp = datetime.now().strftime("%H%M%S")
-    temp_table_ref = f"{bq_client.project}.{dataset_id}.{table_id}_{timestamp}"
+    temp_table_ref = f"{bq_client.project}.{dataset_id}.{table_id}_{short_uuid()}"
     main_table_ref = f"{bq_client.project}.{dataset_id}.{table_id}"
 
     job_config = bigquery.LoadJobConfig(

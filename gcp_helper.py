@@ -1,6 +1,8 @@
+import base64
 import json
 import logging
 import re
+import uuid
 from typing import Any
 
 import google.auth
@@ -83,3 +85,13 @@ def publish_to_pubsub(event: CloudEvent, topic_name: str) -> str | None:
     )
     msg_id = future.result()
     return msg_id
+
+
+def short_uuid():
+    uuid_bytes = uuid.uuid4().bytes
+    return (
+        base64.urlsafe_b64encode(uuid_bytes)
+        .decode("utf-8")
+        .replace("_", "")
+        .rstrip("=")[:22]
+    )

@@ -1,14 +1,13 @@
 import logging
 import os
 import re
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from bs4 import BeautifulSoup
 from google.cloud import bigquery
 
-from gcp_helper import blob_as_text, ensure_table_exists
+from gcp_helper import blob_as_text, ensure_table_exists, short_uuid
 
 from .util import (
     chunk_text,
@@ -137,10 +136,9 @@ class SECFiling:
 
         with bigquery.Client() as bq_client:
             # Define table references
-            timestamp = datetime.now().strftime("%H%M%S")
             output_table_ref = f"{bq_client.project}.{dataset_id}.filing_text_chunks"
             temp_table_ref = (
-                f"{bq_client.project}.{dataset_id}.chunks_{self.cik}_{timestamp}"
+                f"{bq_client.project}.{dataset_id}.chunks_{self.cik}_{short_uuid()}"
             )
 
             # Ensure the main and temp tables exist

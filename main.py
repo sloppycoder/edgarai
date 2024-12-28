@@ -69,8 +69,15 @@ def edgar_processor(cloud_event):
         publish_response(req_id, "SUCCESS", msg)
 
     elif func_name == "chunk_one_filing":
-        cik = data.get("cik ")
+        cik = data.get("cik")
         filename = data.get("filename")
+
+        if not cik or not filename:
+            msg = f"Invalid cik/filename {cik}/{filename}"
+            logger.info(msg)
+            publish_response(req_id, "ERROR", msg)
+            return
+
         n_chunks = chunk_filing(cik, filename, "485BPOS")
         msg = f"{n_chunks} chunks saved for {cik} {filename}"
         logger.info(msg)
@@ -112,7 +119,7 @@ def trigger_chunk_filing(request: flask.Request):
 
             msg_id = publish_to_pubsub(event, request_topic)
             replies.append(
-                f"SUCCESS: published {msg_id} to trigger chunk_one_filing {filename}"
+                f"SUCCESS: published {msg_id} to trigger chunk_one_filing {cik},{filename}"  # noqa E501
             )
 
         return flask.jsonify({"replies": replies})
