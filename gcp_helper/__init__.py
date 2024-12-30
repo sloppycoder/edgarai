@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+import os
 import re
 import uuid
 from typing import Any
@@ -9,8 +10,19 @@ import google.auth
 from cloudevents.http import CloudEvent
 from google.api_core import exceptions as google_exceptions
 from google.cloud import bigquery, pubsub_v1, storage
+from google.cloud import logging as cloud_logging
 
 logger = logging.getLogger(__name__)
+
+
+def setup_logging():
+    if os.getenv("K_SERVICE"):  # Only initialize Google Cloud Logging in Cloud Run
+        client = cloud_logging.Client()
+        client.setup_logging()
+        logging.info("Google Cloud Logging is set up.")
+    else:
+        logging.basicConfig(level=logging.INFO)
+        logging.info("Running locally. Using basic logging.")
 
 
 def blob_as_text(blob_uri: str) -> str:

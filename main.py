@@ -3,24 +3,22 @@ import datetime
 import json
 import logging
 import os
-import sys
 
 import flask
 import functions_framework
 
 from edgar import chunk_filing, load_master_idx
-from gcp_helper import create_cloudevent, publish_to_pubsub
+from gcp_helper import create_cloudevent, publish_to_pubsub, setup_logging
 
-# Initialize logging
+# initiaze logging. use google cloud logging if running in GCP
+setup_logging()
+
+# set level of application modules
+# setting root LOG_LEVEL to DEBUG will log too much noise from other packages
 app_log_level = getattr(logging, os.environ.get("LOG_LEVEL", "").upper(), logging.INFO)
-print(f"app_log_level={app_log_level}")
-logging.basicConfig(
-    level=logging.INFO, format="%(levelname)s %(message)s", stream=sys.stdout
-)
-# adjust log level for modules in our app
-# in order not to display debug messages from packages which is quite noisy
-logging.getLogger("edgar").setLevel(logging.DEBUG)
-logging.getLogger("gcp_helper").setLevel(logging.DEBUG)
+logging.getLogger("main").setLevel(app_log_level)
+logging.getLogger("edgar").setLevel(app_log_level)
+logging.getLogger("gcp_helper").setLevel(app_log_level)
 
 logger = logging.getLogger(__name__)
 
