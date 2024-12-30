@@ -5,6 +5,7 @@ from edgar.util import (
     download_file,
     trim_html_content,
 )
+from tests.helper import drop_table_if_exists
 
 # to be tested with chunk size 400
 test_text_content = """
@@ -74,6 +75,8 @@ def test_chunk_long_line_filing():
 
 
 def test_parse_and_split_chunks():
+    drop_table_if_exists("filing_text_chunks")
+
     filing = SECFiling("1002427", "edgar/data/1002427/0001133228-24-004879.txt")
     html_filename = filing.get_doc_by_type("485BPOS")[0]
     doc_path = download_file(html_filename)

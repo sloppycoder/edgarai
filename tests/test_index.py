@@ -1,9 +1,9 @@
 from edgar import load_master_idx
-from tests.helper import prep_big_query
+from tests.helper import drop_table_if_exists
 
 
 def test_load_master_idx():
-    prep_big_query()
+    drop_table_if_exists("master_idx")
 
     # first time run should get all the rows into the index table
     assert load_master_idx(2020, 1) == 327705
