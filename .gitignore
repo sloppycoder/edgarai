@@ -26,6 +26,9 @@ cdk.out
 edgar-ai-dev.json
 .secret_word
 t.py
+<<<<<<< HEAD
 
 # node stuff, used by datafomr
 node_modules/
+=======
+>>>>>>> refs/heads/develop
