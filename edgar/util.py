@@ -8,6 +8,7 @@ import spacy
 from bs4 import BeautifulSoup
 from google.cloud import storage
 
+import config
 from gcp_helper import blob_as_text
 
 DEFAULT_TEXT_CHUNK_SIZE = 3500
@@ -16,8 +17,6 @@ logger = logging.getLogger(__name__)
 
 EDGAR_BASE_URL = "https://www.sec.gov/Archives"
 user_agent = os.environ.get("USER_AGENT", "Lee Lynn (hayashi@yahoo.com)")
-bucket_name = os.environ.get("GCS_BUCKET_NAME", "")
-cache_dir = os.environ.get("EDGAR_CACHE_DIR", "cache")
 
 
 def download_file(filename: str, refresh: bool = False) -> str | None:
@@ -34,14 +33,14 @@ def download_file(filename: str, refresh: bool = False) -> str | None:
     """
     storage_client = storage.Client()
     try:
-        bucket = storage_client.bucket(bucket_name)
-        cache_filename = f"{cache_dir}/{filename}"
+        bucket = storage_client.bucket(config.bucket_id)
+        cache_filename = f"{config.cache_dir}/{filename}"
         blob = bucket.blob(cache_filename)
 
         if blob.exists():
             if not refresh:
                 logger.debug(f"Returning file exists in cache {cache_filename}")
-                return f"gs://{bucket_name}/{cache_filename}"
+                return f"gs://{config.bucket_id}/{cache_filename}"
             else:
                 logger.debug(f"Deleting file {cache_filename}")
                 blob.delete()
@@ -54,7 +53,7 @@ def download_file(filename: str, refresh: bool = False) -> str | None:
         new_blob.upload_from_string(content)
         logger.debug(f"Downloaded {filename} and saved to {cache_filename}.")
 
-        return f"gs://{bucket_name}/{cache_filename}"
+        return f"gs://{config.bucket_id}/{cache_filename}"
     finally:
         storage_client.close()
 

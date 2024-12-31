@@ -49,7 +49,6 @@ def ensure_table_exists(bq_client, table_ref, schema):
 
     Args:
         bq_client (bigquery.Client): The BigQuery client.
-        dataset_id (str): The dataset ID.
         table_id (str): The table ID.
         schema (list[bigquery.SchemaField]): The schema of the table.
     """

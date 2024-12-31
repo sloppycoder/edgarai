@@ -1,11 +1,11 @@
 import logging
-import os
 
 from google.cloud import bigquery
 
+import config
+
 from .filing import SECFiling
 
-dataset_id = os.environ.get("BQ_DATASET_ID", "edgar")
 logger = logging.getLogger(__name__)
 
 
@@ -57,12 +57,12 @@ def _query_for_chunk_distances(cik: str, accession_number: str, dimensionality: 
             VECTOR_SEARCH(
                 (
                 SELECT *
-                FROM `{dataset_id}.filing_sample_embedding_{dimensionality}`
+                FROM `{config.dataset_id}.filing_sample_embedding_{dimensionality}`
                 WHERE cik = '{cik}'
                 AND accession_number = '{accession_number}'
                 ),
                 'ml_generate_embedding_result',
-                TABLE `{dataset_id}.search_phrases_{dimensionality}`,
+                TABLE `{config.dataset_id}.search_phrases_{dimensionality}`,
                 top_k => 3,
                 distance_type => 'COSINE',
                 options => '{{"use_brute_force":true}}'

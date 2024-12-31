@@ -1,14 +1,8 @@
 import json
-import os
+import sys
 
 import google.auth
-from dotenv import load_dotenv
 from google.cloud import pubsub_v1
-
-load_dotenv()
-
-res_topic_name = os.environ.get("RESPONSE_TOPIC", "")
-
 
 _, project_id = google.auth.default()
 
@@ -20,11 +14,7 @@ def callback(message):
     message.ack()
 
 
-def wait_for_response() -> None:
-    topic_name = os.environ.get("RESPONSE_TOPIC", "edgarai-response")
-    if not topic_name:
-        raise ValueError("RESPONSE_TOPIC environment variable is not set")
-
+def wait_for_response(topic_name: str) -> None:
     subscription_name = (
         f"{topic_name}-sub"  # default subscription when creating the topic
     )
@@ -46,4 +36,5 @@ def wait_for_response() -> None:
 
 
 if __name__ == "__main__":
-    wait_for_response()
+    topic_name = sys.argv[1] if len(sys.argv) > 1 else "edgarai-response"
+    wait_for_response(topic_name)

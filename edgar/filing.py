@@ -1,5 +1,4 @@
 import logging
-import os
 import re
 from pathlib import Path
 from typing import Any, Sequence
@@ -7,6 +6,7 @@ from typing import Any, Sequence
 from bs4 import BeautifulSoup
 from google.cloud import bigquery
 
+import config
 from gcp_helper import blob_as_text, ensure_table_exists, short_uuid
 
 from .util import (
@@ -18,8 +18,6 @@ from .util import (
 )
 
 logger = logging.getLogger(__name__)
-
-dataset_id = os.environ.get("BQ_DATASET_ID", "edgar")
 
 filing_text_chunks_schema = [
     bigquery.SchemaField("cik", "STRING", max_length=20, mode="REQUIRED"),
@@ -148,9 +146,9 @@ def _save_chunks_to_database(
 
     with bigquery.Client() as bq_client:
         # Define table references
-        output_table_ref = f"{bq_client.project}.{dataset_id}.filing_text_chunks"
+        output_table_ref = f"{bq_client.project}.{config.dataset_id}.filing_text_chunks"
         temp_table_ref = (
-            f"{bq_client.project}.{dataset_id}.tmp_chunks_{cik}_{short_uuid()}"
+            f"{bq_client.project}.{config.dataset_id}.tmp_chunks_{cik}_{short_uuid()}"
         )
 
         # Ensure the main and temp tables exist

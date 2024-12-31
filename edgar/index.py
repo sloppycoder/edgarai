@@ -1,17 +1,13 @@
 import logging
-import os
 
 from google.cloud import bigquery
 
+import config
 from gcp_helper import ensure_table_exists, short_uuid
 
 from .util import download_file
 
 logger = logging.getLogger(__name__)
-
-dataset_id = os.environ.get("BQ_DATASET_ID", "edgar")
-bucket_name = os.environ.get("GCS_BUCKET_NAME", "")
-cache_dir = os.environ.get("EDGAR_CACHE_DIR", "cache")
 
 master_idx_schema = [
     bigquery.SchemaField("cik", "STRING", max_length=10, mode="REQUIRED"),
@@ -54,10 +50,10 @@ def load_master_idx(year: int, quarter: int, refresh=False) -> int | None:
     with bigquery.Client() as bq_client:
         ensure_table_exists(
             bq_client,
-            f"{bq_client.project}.{dataset_id}.master_idx",
+            f"{bq_client.project}.{config.dataset_id}.master_idx",
             schema=master_idx_schema,
         )
-        rows = load_idx_to_bigquery(bq_client, idx_uri, dataset_id, table_id)
+        rows = load_idx_to_bigquery(bq_client, idx_uri, config.dataset_id, table_id)
         return rows
 
 
@@ -73,8 +69,8 @@ def load_idx_to_bigquery(
 
     the master.idx from EDGAR are basically a CSV file with 9 header lines
     """
-    temp_table_ref = f"{bq_client.project}.{dataset_id}.tmp_index_{short_uuid()}"
-    main_table_ref = f"{bq_client.project}.{dataset_id}.{table_id}"
+    temp_table_ref = f"{bq_client.project}.{config.dataset_id}.tmp_index_{short_uuid()}"
+    main_table_ref = f"{bq_client.project}.{config.dataset_id}.{table_id}"
 
     job_config = bigquery.LoadJobConfig(
         source_format=bigquery.SourceFormat.CSV,
