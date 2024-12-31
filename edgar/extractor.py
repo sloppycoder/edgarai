@@ -19,10 +19,8 @@ def chunk_filing(cik: str, idx_filename: str, form_type: str) -> int:
     return n_chunks
 
 
-def find_most_relevant_chunks(
-    cik: str, access_number: str, dimensionality: int = 256
-) -> list[str]:
-    chunk_distances = _query_for_chunk_distances(cik, access_number, dimensionality)
+def find_most_relevant_chunks(cik: str, access_number: str) -> list[str]:
+    chunk_distances = _query_for_chunk_distances(cik, access_number)
     relevance_scores = _calculate_relevance(chunk_distances)
 
     # select top 3 chunks, use the first one and the next one if they are adjacent
@@ -44,10 +42,7 @@ def find_most_relevant_chunks(
     return []
 
 
-def _query_for_chunk_distances(cik: str, accession_number: str, dimensionality: int):
-    if dimensionality not in (256, 768):
-        raise ValueError("embedding_dimension must be 256 or 768")
-
+def _query_for_chunk_distances(cik: str, accession_number: str):
     query = rf"""
             SELECT
                 base.chunk_num,
@@ -57,12 +52,12 @@ def _query_for_chunk_distances(cik: str, accession_number: str, dimensionality: 
             VECTOR_SEARCH(
                 (
                 SELECT *
-                FROM `{config.dataset_id}.filing_sample_embedding_{dimensionality}`
+                FROM `{config.dataset_id}.filing_text_chunks_embedding`
                 WHERE cik = '{cik}'
                 AND accession_number = '{accession_number}'
                 ),
                 'ml_generate_embedding_result',
-                TABLE `{config.dataset_id}.search_phrases_{dimensionality}`,
+                TABLE `{config.dataset_id}.search_phrases`,
                 top_k => 3,
                 distance_type => 'COSINE',
                 options => '{{"use_brute_force":true}}'

@@ -195,19 +195,13 @@ def get_most_relevant_chunks(request: flask.Request):
 
             config.setv("dataset_id", dataset_id)
 
-            cik, accession_number, dimensionality = call[1], call[2], call[3]
+            cik, accession_number = call[1], call[2]
 
             if not cik or not cik.isdigit() or not accession_number:
                 replies.append("ERROR: invalid cik or accession_number")
                 continue
 
-            if dimensionality not in (256, 768):
-                replies.append("ERROR: dimensionality must be 256 or 768")
-                continue
-
-            chunks = extractor.find_most_relevant_chunks(
-                cik, accession_number, dimensionality
-            )
+            chunks = extractor.find_most_relevant_chunks(cik, accession_number)
             chunks_json = json.dumps(chunks)
             logger.info(
                 f"get_most_relevant_chunks({cik}, {accession_number}) -> {chunks_json}"
