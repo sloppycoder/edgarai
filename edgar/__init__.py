@@ -1,5 +1,5 @@
-from . import filing, index
+from . import extractor, filing, index
 
 SECFiling = filing.SECFiling
 load_master_idx = index.load_master_idx
-chunk_filing = filing.chunk_filing
+chunk_filing = extractor.chunk_filing

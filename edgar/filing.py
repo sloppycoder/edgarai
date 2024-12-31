@@ -2,7 +2,7 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 from bs4 import BeautifulSoup
 from google.cloud import bigquery
@@ -121,40 +121,47 @@ class SECFiling:
             raise FilingExceptin(f"Failed to download {self.idx_filename}")
 
         chunks = chunk_text(trim_html_content(doc_path))
+        n_chunks, errors = _save_chunks_to_database(
+            self.cik, self.date_filed, self.accession_number, chunks
+        )
+        if errors:
+            logger.error(f"Error saving chunks to database: {errors[:10]}")
+            raise FilingExceptin(f"Error saving chunks to database: {errors[:10]}")
 
-        # Prepare rows to insert into the temp table
-        rows_to_insert = [
-            {
-                "cik": self.cik,
-                "date_filed": self.date_filed,
-                "accession_number": self.accession_number,
-                "content": content,
-                "chunk_num": chunk_num,
-            }
-            for chunk_num, content in enumerate(chunks)
-        ]
+        return n_chunks
 
-        with bigquery.Client() as bq_client:
-            # Define table references
-            output_table_ref = f"{bq_client.project}.{dataset_id}.filing_text_chunks"
-            temp_table_ref = (
-                f"{bq_client.project}.{dataset_id}.tmp_chunks_{self.cik}_{short_uuid()}"
-            )
 
-            # Ensure the main and temp tables exist
-            ensure_table_exists(
-                bq_client, output_table_ref, schema=filing_text_chunks_schema
-            )
-            ensure_table_exists(
-                bq_client, temp_table_ref, schema=filing_text_chunks_schema
-            )
+def _save_chunks_to_database(
+    cik: str, date_filed: str, accession_number: str, chunks: list[str]
+) -> tuple[int, Sequence[Any]]:
+    # Prepare rows to insert into the temp table
+    rows_to_insert = [
+        {
+            "cik": cik,
+            "date_filed": date_filed,
+            "accession_number": accession_number,
+            "content": content,
+            "chunk_num": chunk_num,
+        }
+        for chunk_num, content in enumerate(chunks)
+    ]
 
+    with bigquery.Client() as bq_client:
+        # Define table references
+        output_table_ref = f"{bq_client.project}.{dataset_id}.filing_text_chunks"
+        temp_table_ref = (
+            f"{bq_client.project}.{dataset_id}.tmp_chunks_{cik}_{short_uuid()}"
+        )
+
+        # Ensure the main and temp tables exist
+        ensure_table_exists(bq_client, output_table_ref, schema=filing_text_chunks_schema)
+        ensure_table_exists(bq_client, temp_table_ref, schema=filing_text_chunks_schema)
+
+        try:
             # Insert rows into the temp table
             errors = bq_client.insert_rows_json(temp_table_ref, rows_to_insert)
             if errors:
-                raise FilingExceptin(
-                    f"Failed to insert rows into temp table: {errors[:10]}"
-                )
+                return 0, errors
 
             # Merge temp table into the main table
             merge_query = f"""
@@ -179,23 +186,13 @@ class SECFiling:
             job.result()
             rows_affected = job.num_dml_affected_rows
             logger.info(f"rows merged:{rows_affected}")
+            n_count = len(rows_to_insert)
+            logger.info(f"Inserted and merged {n_count} rows into {output_table_ref}")
+            return n_count, []
 
+        finally:
             # Clean up the temporary table
             bq_client.delete_table(temp_table_ref, not_found_ok=True)
-
-            n_count = len(rows_to_insert)
-            logging.info(f"Inserted and merged {n_count} rows into {output_table_ref}")
-            return n_count
-
-
-def chunk_filing(cik: str, idx_filename: str, form_type: str) -> int:
-    filing = SECFiling(cik, idx_filename)
-    html_filename = filing.get_doc_by_type(form_type)[0]
-    if not html_filename:
-        return 0
-
-    n_chunks = filing.save_chunked_texts("485BPOS")
-    return n_chunks
 
 
 def _read_index_headers(index_headers_filename) -> tuple[str, str, list[dict[str, Any]]]:

@@ -49,6 +49,8 @@ asyncio_default_fixture_loop_scope = "function"
 source = ["."]
 omit = [
     "tests/*",
+    "*/__main__.py",
+    "main.py",
 ]
 
 # see ruff configuration options at

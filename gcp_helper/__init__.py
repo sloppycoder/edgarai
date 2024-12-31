@@ -105,5 +105,6 @@ def short_uuid():
         base64.urlsafe_b64encode(uuid_bytes)
         .decode("utf-8")
         .replace("_", "")
+        .replace("-", "")
         .rstrip("=")[:22]
     )

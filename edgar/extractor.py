@@ -1,8 +1,22 @@
+import logging
 import os
 
 from google.cloud import bigquery
 
+from .filing import SECFiling
+
 dataset_id = os.environ.get("BQ_DATASET_ID", "edgar")
+logger = logging.getLogger(__name__)
+
+
+def chunk_filing(cik: str, idx_filename: str, form_type: str) -> int:
+    filing = SECFiling(cik, idx_filename)
+    html_filename = filing.get_doc_by_type(form_type)[0]
+    if not html_filename:
+        return 0
+
+    n_chunks = filing.save_chunked_texts("485BPOS")
+    return n_chunks
 
 
 def find_most_relevant_chunks(
