@@ -19,7 +19,7 @@ gsutil mb -l us-central1 -b on -p edgar-ai gs://edgar_666/
 
 # create pub/sub topic
 
-# deploy the functions
+# deploy the functions in parallel
 gcloud functions deploy edgar_processor \
   --gen2 \
   --region us-central1 \
@@ -29,7 +29,10 @@ gcloud functions deploy edgar_processor \
   --source . \
   --trigger-topic edgarai-request \
   --entry-point edgar_processor \
-  --set-env-vars="GCS_BUCKET_NAME=edgar_666,RESPONSE_TOPIC=edgarai-response"
+  --set-env-vars="GCS_BUCKET_ID=edgar_666,RESPONSE_TOPIC=edgarai-response" \
+  &
+
+PID1=$!
 
 gcloud functions deploy trigger_processor \
   --gen2 \
@@ -40,7 +43,10 @@ gcloud functions deploy trigger_processor \
   --trigger-http \
   --no-allow-unauthenticated \
   --entry-point trigger_processor \
-  --set-env-vars="GCS_BUCKET_NAME=edgar_666,REQUEST_TOPIC=edgarai-request,RESPONSE_TOPIC=edgarai-response"
+  --set-env-vars="GCS_BUCKET_ID=edgar_666,REQUEST_TOPIC=edgarai-request,RESPONSE_TOPIC=edgarai-response" \
+  &
+
+PID2=$!
 
 gcloud functions deploy get_most_relevant_chunks \
   --gen2 \
@@ -49,7 +55,12 @@ gcloud functions deploy get_most_relevant_chunks \
   --source . \
   --trigger-http \
   --no-allow-unauthenticated \
-  --entry-point get_most_relevant_chunks
+  --entry-point get_most_relevant_chunks \
+  &
+
+PID3=$!
+
+wait $PID1 $PID2 $PID3
 
 ```shell
 # start subscriber for response messages from functions

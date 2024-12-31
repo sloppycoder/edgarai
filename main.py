@@ -2,11 +2,11 @@ import base64
 import datetime
 import json
 import logging
-import os
 
 import flask
 import functions_framework
 
+import config
 from edgar import chunk_filing, extractor, load_master_idx
 from gcp_helper import create_cloudevent, publish_to_pubsub, setup_logging
 
@@ -15,7 +15,7 @@ setup_logging()
 
 # set level of application modules
 # setting root LOG_LEVEL to DEBUG will log too much noise from other packages
-app_log_level = getattr(logging, os.environ.get("LOG_LEVEL", "").upper(), logging.INFO)
+app_log_level = config.log_level
 logging.getLogger("main").setLevel(app_log_level)
 logging.getLogger("edgar").setLevel(app_log_level)
 logging.getLogger("gcp_helper").setLevel(app_log_level)
@@ -24,8 +24,6 @@ logger = logging.getLogger(__name__)
 
 
 def publish_response(req_id: str, status: str, message: str = "{}"):
-    response_topic = os.environ.get("RESPONSE_TOPIC", "edgarai-response")
-
     event = create_cloudevent(
         attributes={},
         data={
@@ -37,7 +35,7 @@ def publish_response(req_id: str, status: str, message: str = "{}"):
             ),
         },
     )
-    publish_to_pubsub(event, response_topic)
+    publish_to_pubsub(event, config.res_topic)
 
 
 @functions_framework.cloud_event
@@ -49,6 +47,9 @@ def edgar_processor(cloud_event):
     message = event.get("message")
     req_id = message.get("message_id")
     data = json.loads(base64.b64decode(message["data"]))
+
+    dataset_id = data.get("dataset_id")
+    config.setv("dataset_id", dataset_id)
 
     func_name = data.get("function")
     if func_name == "load_master_idx":
@@ -91,8 +92,6 @@ def trigger_processor(request: flask.Request):  # noqa: C901
     This function is intended to be invoked as a Remote Function in BigQuery
     thus the logic
     """
-    request_topic = os.environ.get("REQUEST_TOPIC", "edgarai-request")
-
     try:
         replies = []
         request_json = request.get_json()
@@ -102,7 +101,8 @@ def trigger_processor(request: flask.Request):  # noqa: C901
         calls = request_json["calls"]
         for call in calls:
             func_name = call[0].strip()
-            params = [p.strip() for p in call[1].split("|")]
+            dataset_id = call[1].strip()
+            params = [p.strip() for p in call[2].split("|")]
 
             if func_name == "load_master_idx":
                 year, qtr = params[0], params[1]
@@ -130,14 +130,15 @@ def trigger_processor(request: flask.Request):  # noqa: C901
                     attributes={},
                     data={
                         "function": "load_master_idx",
+                        "dataset_id": dataset_id,
                         "year": year,
                         "quarter": qtr,
                     },
                 )
 
-                msg_id = publish_to_pubsub(event, request_topic)
+                msg_id = publish_to_pubsub(event, config.req_topic)
                 replies.append(
-                    f"SUCCESS: published {msg_id} to trigger load_master_idx {year},{qtr}"  # noqa E501
+                    f"SUCCESS: published {msg_id} to trigger load_master_idx {dataset_id},{year},{qtr}"  # noqa E501
                 )
 
             elif func_name == "chunk_one_filing":
@@ -156,14 +157,15 @@ def trigger_processor(request: flask.Request):  # noqa: C901
                     attributes={},
                     data={
                         "function": "chunk_one_filing",
+                        "dataset_id": dataset_id,
                         "cik": cik,
                         "filename": filename,
                     },
                 )
 
-                msg_id = publish_to_pubsub(event, request_topic)
+                msg_id = publish_to_pubsub(event, config.req_topic)
                 replies.append(
-                    f"SUCCESS: published {msg_id} to trigger chunk_one_filing {cik},{filename}"  # noqa E501
+                    f"SUCCESS: published {msg_id} to trigger chunk_one_filing {dataset_id},{cik},{filename}"  # noqa E501
                 )
 
             else:
@@ -186,7 +188,14 @@ def get_most_relevant_chunks(request: flask.Request):
 
         calls = request_json["calls"]
         for call in calls:
-            cik, accession_number, dimensionality = call[0], call[1], call[2]
+            dataset_id = call[0].strip()
+            if not dataset_id:
+                replies.append("ERROR: dataset_id is required")
+                continue
+
+            config.setv("dataset_id", dataset_id)
+
+            cik, accession_number, dimensionality = call[1], call[2], call[3]
 
             if not cik or not cik.isdigit() or not accession_number:
                 replies.append("ERROR: invalid cik or accession_number")
