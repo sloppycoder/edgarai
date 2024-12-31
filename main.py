@@ -7,7 +7,7 @@ import os
 import flask
 import functions_framework
 
-from edgar import chunk_filing, load_master_idx
+from edgar import chunk_filing, extractor, load_master_idx
 from gcp_helper import create_cloudevent, publish_to_pubsub, setup_logging
 
 # initiaze logging. use google cloud logging if running in GCP
@@ -169,6 +169,41 @@ def trigger_processor(request: flask.Request):  # noqa: C901
             else:
                 replies.append(f"ERROR: unknown function name {func_name}")
                 continue
+
+        return flask.jsonify({"replies": replies})
+
+    except Exception as e:
+        return flask.jsonify({"errorMessage": str(e)}), 400
+
+
+@functions_framework.http
+def get_most_relevant_chunks(request: flask.Request):
+    try:
+        replies = []
+        request_json = request.get_json()
+
+        logger.info(f"get_most_relevant_chunks received {request_json}")
+
+        calls = request_json["calls"]
+        for call in calls:
+            cik, accession_number, dimensionality = call[0], call[1], call[2]
+
+            if not cik or not cik.isdigit() or not accession_number:
+                replies.append("ERROR: invalid cik or accession_number")
+                continue
+
+            if dimensionality not in (256, 768):
+                replies.append("ERROR: dimensionality must be 256 or 768")
+                continue
+
+            chunks = extractor.find_most_relevant_chunks(
+                cik, accession_number, dimensionality
+            )
+            chunks_json = json.dumps(chunks)
+            logger.info(
+                f"get_most_relevant_chunks({cik}, {accession_number}) -> {chunks_json}"
+            )
+            replies.append(json.dumps(chunks))
 
         return flask.jsonify({"replies": replies})
 

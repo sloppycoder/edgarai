@@ -42,6 +42,14 @@ gcloud functions deploy trigger_processor \
   --entry-point trigger_processor \
   --set-env-vars="GCS_BUCKET_NAME=edgar_666,REQUEST_TOPIC=edgarai-request,RESPONSE_TOPIC=edgarai-response"
 
+gcloud functions deploy get_most_relevant_chunks \
+  --gen2 \
+  --region us-central1 \
+  --runtime python312 \
+  --source . \
+  --trigger-http \
+  --no-allow-unauthenticated \
+  --entry-point get_most_relevant_chunks
 
 ```shell
 # start subscriber for response messages from functions
