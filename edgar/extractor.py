@@ -57,7 +57,7 @@ def _query_for_chunk_distances(cik: str, accession_number: str):
                 AND accession_number = '{accession_number}'
                 ),
                 'ml_generate_embedding_result',
-                TABLE `{config.dataset_id}.search_phrase`,
+                TABLE `{config.dataset_id}.search_phrases`,
                 top_k => 3,
                 distance_type => 'COSINE',
                 options => '{{"use_brute_force":true}}'
