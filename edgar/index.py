@@ -62,15 +62,14 @@ def load_idx_to_bigquery(
     uri: str,
     dataset_id: str,
     table_id: str,
-    keep_temp_table: bool = False,
 ) -> int | None:
     """
     Load an idx file into BigQuery.
 
     the master.idx from EDGAR are basically a CSV file with 9 header lines
     """
-    temp_table_ref = f"{bq_client.project}.{config.dataset_id}.tmp_index_{short_uuid()}"
-    main_table_ref = f"{bq_client.project}.{config.dataset_id}.{table_id}"
+    temp_table_ref = f"{bq_client.project}.{dataset_id}.tmp_index_{short_uuid()}"
+    main_table_ref = f"{bq_client.project}.{dataset_id}.{table_id}"
 
     job_config = bigquery.LoadJobConfig(
         source_format=bigquery.SourceFormat.CSV,
@@ -84,41 +83,41 @@ def load_idx_to_bigquery(
     job = bq_client.load_table_from_uri(uri, temp_table_ref, job_config=job_config)
     job.result()
 
-    merge_sql = rf"""
-    MERGE `{main_table_ref}` T
-    USING `{temp_table_ref}` S
-    ON      T.cik = CAST(int64_field_0 AS STRING)
-        AND T.company_name = S.string_field_1
-        AND T.form_type = S.string_field_2
-        AND T.date_filed = S.date_field_3
-        AND T.filename = S.string_field_4
-    WHEN NOT MATCHED THEN
-    INSERT (
-        cik,
-        company_name,
-        form_type,
-        date_filed,
-        filename,
-        accession_number
-    )
-    VALUES
-    (
-        CAST(S.int64_field_0 AS STRING),
-        S.string_field_1,
-        S.string_field_2,
-        S.date_field_3,
-        S.string_field_4,
-        REGEXP_EXTRACT(S.string_field_4, r'(\d{{10}}-\d{{2}}-\d{{6}})')
-    )
-    """
-    logger.debug(merge_sql)
-    job = bq_client.query(merge_sql)
-    job.result()
-    rows_affected = job.num_dml_affected_rows
-    logger.info(f"rows merged:{rows_affected}")
+    try:
+        merge_sql = rf"""
+        MERGE `{main_table_ref}` T
+        USING `{temp_table_ref}` S
+        ON      T.cik = CAST(int64_field_0 AS STRING)
+            AND T.company_name = S.string_field_1
+            AND T.form_type = S.string_field_2
+            AND T.date_filed = S.date_field_3
+            AND T.filename = S.string_field_4
+        WHEN NOT MATCHED THEN
+        INSERT (
+            cik,
+            company_name,
+            form_type,
+            date_filed,
+            filename,
+            accession_number
+        )
+        VALUES
+        (
+            CAST(S.int64_field_0 AS STRING),
+            S.string_field_1,
+            S.string_field_2,
+            S.date_field_3,
+            S.string_field_4,
+            REGEXP_EXTRACT(S.string_field_4, r'(\d{{10}}-\d{{2}}-\d{{6}})')
+        )
+        """
+        logger.debug(merge_sql)
+        job = bq_client.query(merge_sql)
+        job.result()
+        rows_affected = job.num_dml_affected_rows
+        logger.info(f"load_idx_to_bigquery: rows merged:{rows_affected}")
+        return rows_affected
 
-    if not keep_temp_table:
+    finally:
         bq_client.delete_table(temp_table_ref)
         logger.debug(f"Temporary table {temp_table_ref} deleted.")
-
-    return rows_affected
