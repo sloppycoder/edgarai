@@ -20,7 +20,6 @@ def test_chunk_filing():
 
 def test_get_relevant_chunks():
     chunks = find_most_relevant_chunks(
-        cik="1518042",
-        access_number="0001580642-24-002155",
+        cik="789281", accession_number="0001623632-24-000158"
     )
-    assert chunks == [66]
+    assert chunks == [122, 123]

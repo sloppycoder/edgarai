@@ -19,8 +19,8 @@ def chunk_filing(cik: str, idx_filename: str, form_type: str) -> int:
     return n_chunks
 
 
-def find_most_relevant_chunks(cik: str, access_number: str) -> list[str]:
-    chunk_distances = _query_for_chunk_distances(cik, access_number)
+def find_most_relevant_chunks(cik: str, accession_number: str) -> list[str]:
+    chunk_distances = _query_for_chunk_distances(cik, accession_number)
     relevance_scores = _calculate_relevance(chunk_distances)
 
     # select top 3 chunks, use the first one and the next one if they are adjacent
@@ -57,7 +57,7 @@ def _query_for_chunk_distances(cik: str, accession_number: str):
                 AND accession_number = '{accession_number}'
                 ),
                 'ml_generate_embedding_result',
-                TABLE `{config.dataset_id}.search_phrases`,
+                TABLE `{config.dataset_id}.search_phrase`,
                 top_k => 3,
                 distance_type => 'COSINE',
                 options => '{{"use_brute_force":true}}'

@@ -17,36 +17,21 @@ gcloud config set compute/region us-central1
 # create the bucket
 gsutil mb -l us-central1 -b on -p edgar-ai gs://edgar_666/
 
-# create pub/sub topic
-
 # deploy the functions in parallel
 gcloud functions deploy edgar_processor \
   --gen2 \
   --region us-central1 \
   --runtime python312 \
-  --memory 1G \
-  --timeout 180s \
-  --source . \
-  --trigger-topic edgarai-request \
-  --entry-point edgar_processor \
-  --set-env-vars="GCS_BUCKET_ID=edgar_666,RESPONSE_TOPIC=edgarai-response" \
-  &
-
-PID1=$!
-
-gcloud functions deploy trigger_processor \
-  --gen2 \
-  --region us-central1 \
-  --runtime python312 \
   --memory 512M \
+  --timeout 900 \
   --source . \
   --trigger-http \
   --no-allow-unauthenticated \
-  --entry-point trigger_processor \
-  --set-env-vars="GCS_BUCKET_ID=edgar_666,REQUEST_TOPIC=edgarai-request,RESPONSE_TOPIC=edgarai-response" \
+  --entry-point edgar_processor \
+  --set-env-vars="GCS_BUCKET_ID=edgar_666" \
   &
 
-PID2=$!
+PID1=$!
 
 gcloud functions deploy get_most_relevant_chunks \
   --gen2 \
@@ -58,14 +43,11 @@ gcloud functions deploy get_most_relevant_chunks \
   --entry-point get_most_relevant_chunks \
   &
 
-PID3=$!
+PID2=$!
 
-wait $PID1 $PID2 $PID3
+wait $PID1 $PID2
 
 ```shell
-# start subscriber for response messages from functions
-python -m gcp_helper
-
 
 # Do the create remote function setup in BigQuery and
 # then invoke function using SQL

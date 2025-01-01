@@ -7,7 +7,6 @@ readme = "README.md"
 requires-python = ">= 3.12"
 dependencies = [
     "beautifulsoup4>=4.12.3",
-    "cloudevents>=1.11.0",
     "functions-framework>=3.8.2",
     "google-cloud-bigquery>=3.27.0",
     "google-cloud-logging>=3.11.3",
@@ -23,7 +22,6 @@ dev = [
     "pytest-dotenv >= 0.5.2",
     "pytest-mock >= 3.14",
     "pytest-cov >= 6.0",
-    "pytest-asyncio>=0.24.0",
     "pre-commit >= 4.0.1",
     "ruff >= 0.8.2",
     "pyright >= 1.1.139",
@@ -40,7 +38,7 @@ filterwarnings = [
     "ignore::DeprecationWarning",
 ]
 env_override_existing_values = 1
-env_files = [".env.test"]
+env_files = [".env"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 

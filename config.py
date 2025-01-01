@@ -38,8 +38,6 @@ class ConfigHolder:
     bucket_id: str = ""
     cache_dir: str = "cache"
     log_level: str = "DEBUG"
-    req_topic: str = ""
-    res_topic: str = ""
 
     def __init__(self):
         # use env var to override default values
@@ -47,8 +45,6 @@ class ConfigHolder:
             ("GCS_BUCKET_ID", "bucket_id"),
             ("EDGAR_CACHE_DIR", "cache_dir"),
             ("LOG_LEVEL", "log_level"),
-            ("RESPONSE_TOPIC", "res_topic"),
-            ("REQUEST_TOPIC", "req_topic"),
         ]:
             val = os.environ.get(env_var)
             if val:
