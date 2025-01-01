@@ -103,9 +103,6 @@ def chunk_text(content: str, chunk_size: int = DEFAULT_TEXT_CHUNK_SIZE) -> list[
         list[str]: A list of text chunks
     """
     # Load SpaCy NLP model
-    # either way works
-    # import en_core_web_sm
-    # nlp = en_core_web_sm.load()
     nlp = spacy.load("en_core_web_sm")
     logger.debug("chunk_text: loaded model")
 

@@ -25,7 +25,7 @@ gcloud functions deploy edgar_processor \
   --region us-central1 \
   --runtime python312 \
   --memory 2G \
-  --timeout 300s \
+  --timeout 1800s \
   --source . \
   --trigger-topic edgarai-request \
   --entry-point edgar_processor \
