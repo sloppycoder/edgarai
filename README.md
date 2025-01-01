@@ -22,7 +22,7 @@ gcloud functions deploy edgar_processor \
   --gen2 \
   --region us-central1 \
   --runtime python312 \
-  --memory 512M \
+  --memory 1G \
   --timeout 900 \
   --source . \
   --trigger-http \

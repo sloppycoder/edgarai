@@ -96,7 +96,7 @@ def edgar_processor(request: flask.Request):  # noqa: C901
         request_json = request.get_json()
         calls = request_json["calls"]
         logger.info(
-            f"trigger_processor received for {len(calls)} invocations: {request_json}"
+            f"edgar_processor received for {len(calls)} invocations: {request_json}"
         )
         replies = handle_calls(calls)
         return flask.jsonify({"replies": replies})
