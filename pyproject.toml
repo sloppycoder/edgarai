@@ -8,6 +8,7 @@ requires-python = ">= 3.12"
 dependencies = [
     "beautifulsoup4>=4.12.3",
     "cloudevents>=1.11.0",
+    "en-core-web-sm",
     "functions-framework>=3.8.2",
     "google-cloud-bigquery>=3.27.0",
     "google-cloud-logging>=3.11.3",
@@ -32,6 +33,9 @@ dev = [
 [tool.uv]
 managed = true
 
+[tool.uv.sources]
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 testpaths = ["tests"]
@@ -40,7 +44,7 @@ filterwarnings = [
     "ignore::DeprecationWarning",
 ]
 env_override_existing_values = 1
-env_files = [".env.test"]
+env_files = [".env"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 
