@@ -118,7 +118,18 @@ class SECFiling:
         if not doc_path:
             raise FilingExceptin(f"Failed to download {self.idx_filename}")
 
-        chunks = chunk_text(trim_html_content(doc_path))
+        trimmed_html = trim_html_content(doc_path)
+        logger.debug(f"Trimmed HTML content size {len(trimmed_html)}")
+        try:
+            chunks = chunk_text(trimmed_html)
+            logger.debug(f"Chunked text into {len(chunks)} chunks")
+        except Exception as e:
+            logger.info(f"Error chunking text: {e}")
+            chunks = []
+
+        if not chunks:
+            return 0
+
         n_chunks, errors = _save_chunks_to_database(
             self.cik, self.date_filed, self.accession_number, chunks
         )
@@ -182,10 +193,10 @@ def _save_chunks_to_database(
             logger.debug(merge_query)
             job = bq_client.query(merge_query)
             job.result()
-            rows_affected = job.num_dml_affected_rows
-            logger.info(f"rows merged:{rows_affected}")
             n_count = len(rows_to_insert)
-            logger.info(f"Inserted and merged {n_count} rows into {output_table_ref}")
+            logger.info(
+                f"_save_chunks_to_database: Inserted {n_count} rows and merged { job.num_dml_affected_rows} into {output_table_ref}"  # noqa E501
+            )
             return n_count, []
 
         finally:
