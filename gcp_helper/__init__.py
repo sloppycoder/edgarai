@@ -19,10 +19,10 @@ def setup_cloud_logging():
     if os.getenv("K_SERVICE"):  # Only initialize Google Cloud Logging in Cloud Run
         client = cloud_logging.Client()
         client.setup_logging()
-        logging.info("Google Cloud Logging is set up.")
+        logging.info("Google Cloud Logging is enabled.")
     else:
         logging.basicConfig(level=logging.INFO)
-        logging.info("Running locally. Using basic logging.")
+        logging.info("Using local logging.")
 
 
 def blob_as_text(blob_uri: str) -> str:

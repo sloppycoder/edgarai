@@ -2,7 +2,7 @@ substitutions:
   _REGION: "us-central1"
   _RUNTIME: "python312"
   _REQ_TOPIC: "edgarai-request"
-  _RES_TOPIC: "edgarai-respsone"
+  _RES_TOPIC: "edgarai-response"
   _BUCKET_ID: "edgar_666"
   _LOG_LEVEL: "INFO"
 
