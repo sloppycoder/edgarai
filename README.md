@@ -52,6 +52,7 @@ gcloud functions deploy get_most_relevant_chunks \
   --gen2 \
   --region us-central1 \
   --runtime python312 \
+  --timeout 120s \
   --source . \
   --trigger-http \
   --no-allow-unauthenticated \
