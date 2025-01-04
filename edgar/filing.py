@@ -4,7 +4,9 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from bs4 import BeautifulSoup
+from google.api_core.exceptions import BadRequest
 from google.cloud import bigquery
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 import config
 from gcp_helper import blob_as_text, ensure_table_exists, short_uuid
@@ -140,6 +142,11 @@ class SECFiling:
         return n_chunks
 
 
+@retry(
+    retry=retry_if_exception_type(BadRequest),
+    stop=stop_after_attempt(4),
+    wait=wait_exponential(multiplier=1, min=2, max=30),
+)
 def _save_chunks_to_database(
     cik: str, date_filed: str, accession_number: str, chunks: list[str]
 ) -> tuple[int, Sequence[Any]]:

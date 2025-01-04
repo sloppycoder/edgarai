@@ -183,7 +183,7 @@ def get_most_relevant_chunks(request: flask.Request):
         replies = []
         request_json = request.get_json()
 
-        logger.info(f"get_most_relevant_chunks received {request_json}")
+        logger.debug(f"get_most_relevant_chunks received {request_json}")
 
         calls = request_json["calls"]
         for call in calls:
@@ -202,7 +202,7 @@ def get_most_relevant_chunks(request: flask.Request):
 
             chunks = extractor.find_most_relevant_chunks(cik, accession_number)
             chunks_json = json.dumps(chunks)
-            logger.info(
+            logger.debug(
                 f"get_most_relevant_chunks({cik}, {accession_number}) -> {chunks_json}"
             )
             replies.append(json.dumps(chunks))

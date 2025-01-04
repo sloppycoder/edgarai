@@ -1,6 +1,8 @@
 import logging
 
+from google.api_core.exceptions import BadRequest
 from google.cloud import bigquery
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 import config
 from gcp_helper import ensure_table_exists, short_uuid
@@ -84,7 +86,7 @@ def load_idx_to_bigquery(
     job.result()
 
     try:
-        merge_sql = rf"""
+        merge_query = rf"""
         MERGE `{main_table_ref}` T
         USING `{temp_table_ref}` S
         ON      T.cik = CAST(int64_field_0 AS STRING)
@@ -111,13 +113,22 @@ def load_idx_to_bigquery(
             REGEXP_EXTRACT(S.string_field_4, r'(\d{{10}}-\d{{2}}-\d{{6}})')
         )
         """
-        logger.debug(merge_sql)
-        job = bq_client.query(merge_sql)
-        job.result()
-        rows_affected = job.num_dml_affected_rows
-        logger.info(f"load_idx_to_bigquery: rows merged:{rows_affected}")
-        return rows_affected
+        return _run_merge_query(bq_client, merge_query)
 
     finally:
         bq_client.delete_table(temp_table_ref)
         logger.debug(f"Temporary table {temp_table_ref} deleted.")
+
+
+@retry(
+    retry=retry_if_exception_type(BadRequest),
+    stop=stop_after_attempt(4),
+    wait=wait_exponential(multiplier=1, min=2, max=30),
+)
+def _run_merge_query(bq_client, merge_query):
+    logger.debug(merge_query)
+    job = bq_client.query(merge_query)
+    job.result()
+    rows_affected = job.num_dml_affected_rows
+    logger.info(f"load_idx_to_bigquery: rows merged:{rows_affected}")
+    return rows_affected

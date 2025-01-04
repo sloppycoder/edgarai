@@ -26,6 +26,7 @@ gcloud functions deploy edgar_processor \
   --runtime python312 \
   --memory 2G \
   --timeout 1800s \
+  --max-instances 200 \
   --source . \
   --trigger-topic edgarai-request \
   --entry-point edgar_processor \

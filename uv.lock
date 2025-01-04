@@ -295,6 +295,7 @@ dependencies = [
     { name = "html2text" },
     { name = "pip" },
     { name = "spacy" },
+    { name = "tenacity" },
 ]
 
 [package.dev-dependencies]
@@ -322,6 +323,7 @@ requires-dist = [
     { name = "html2text", specifier = ">=2024.2.26" },
     { name = "pip", specifier = ">=24.3.1" },
     { name = "spacy", specifier = ">=3.8.3" },
+    { name = "tenacity", specifier = ">=9.0.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -1365,6 +1367,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/95/3d/2dd76d2fd99f0fb632c40273755d99466bdee2aaebd40866507249debd43/srsly-2.5.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2a657d8c1486d47910868cfadd5a80cd77719c6228fed5b01b878329b95f0752", size = 1127978 },
     { url = "https://files.pythonhosted.org/packages/54/93/22d3f4d3c1d35d83f15f56a995777535288388f5e6161fbe36ac4bf466a5/srsly-2.5.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:9f4430fab1bd62fea7b23ad2bd7822bf80cdd4a75c7d051a555c69aa10f4bfdc", size = 1100354 },
     { url = "https://files.pythonhosted.org/packages/23/51/b448c7ffb15bf9e1af0369bdf3e00e87e893a9ea7fca7ea3f020af5a105a/srsly-2.5.0-cp313-cp313-win_amd64.whl", hash = "sha256:35fa3aadfc0d983e80fc5e0319825e91f792d13b414c1aff20cbbb47569d5109", size = 630642 },
+]
+
+[[package]]
+name = "tenacity"
+version = "9.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/94/91fccdb4b8110642462e653d5dcb27e7b674742ad68efd146367da7bdb10/tenacity-9.0.0.tar.gz", hash = "sha256:807f37ca97d62aa361264d497b0e31e92b8027044942bfa756160d908320d73b", size = 47421 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b6/cb/b86984bed139586d01532a587464b5805f12e397594f19f931c4c2fbfa61/tenacity-9.0.0-py3-none-any.whl", hash = "sha256:93de0c98785b27fcf659856aa9f54bfbd399e29969b0621bc7f762bd441b4539", size = 28169 },
 ]
 
 [[package]]

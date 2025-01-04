@@ -247,6 +247,8 @@ srsly==2.5.0
     #   spacy
     #   thinc
     #   weasel
+tenacity==9.0.0
+    # via edgar (pyproject.toml)
 thinc==8.3.3
     # via spacy
 tqdm==4.67.1
