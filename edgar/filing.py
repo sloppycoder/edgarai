@@ -1,5 +1,6 @@
 import logging
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -123,8 +124,12 @@ class SECFiling:
         trimmed_html = trim_html_content(doc_path)
         logger.debug(f"Trimmed HTML content size {len(trimmed_html)}")
         try:
+            start_t = datetime.now()
             chunks = chunk_text(trimmed_html)
-            logger.debug(f"Chunked text into {len(chunks)} chunks")
+            elasped_t = datetime.now() - start_t
+            logger.info(
+                f"Chunked trimmed html text of {len(trimmed_html)} bytes into {len(chunks)} chunks took {elasped_t.total_seconds()}"  # noqa E501
+            )
         except Exception as e:
             logger.info(f"Error chunking text: {e}")
             chunks = []
