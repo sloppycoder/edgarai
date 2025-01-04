@@ -63,4 +63,5 @@ steps:
       - "--entry-point=get_most_relevant_chunks"
       - "--source"
       - "."
+      - "--set-env-vars"
       - "LOG_LEVEL=${_LOG_LEVEL}"
