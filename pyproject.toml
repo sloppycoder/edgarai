@@ -1,7 +1,7 @@
 [project]
-name = "edgar"
-version = "0.1.0"
-description = "Copier template for generic Python 3 project with tooling configuration for testing, linting and IDE support"
+name = "edgar-functions"
+version = "1.0.0"
+description = "Google Cloud Functions to assist BigQuery in processing SEC Filings"
 authors = [{ name = "Li Lin", email = "guru.lin@gmail.com" }]
 readme = "README.md"
 requires-python = ">= 3.12"
