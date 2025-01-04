@@ -144,8 +144,8 @@ class SECFiling:
 
 @retry(
     retry=retry_if_exception_type(BadRequest),
-    stop=stop_after_attempt(4),
-    wait=wait_exponential(multiplier=1, min=2, max=30),
+    stop=stop_after_attempt(6),
+    wait=wait_exponential(multiplier=1, min=2, max=60),
 )
 def _save_chunks_to_database(
     cik: str, date_filed: str, accession_number: str, chunks: list[str]
