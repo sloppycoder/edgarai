@@ -1,0 +1,57 @@
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'functions'
+      - 'deploy'
+      - 'edgar_processor'
+      - '--gen2'
+      - '--region=us-central1'
+      - '--runtime=python312'
+      - '--memory=2G'
+      - '--timeout=1800s'
+      - '--max-instances=200'
+      - '--trigger-topic=edgarai-request'
+      - '--entry-point=edgar_processo'
+      - '--source'
+      - '.'
+      - '--set-env-vars
+      - 'GCS_BUCKET_ID=edgar_666,RESPONSE_TOPIC=edgarai-response'
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'functions'
+      - 'deploy'
+      - 'trigger_processor'
+      - '--gen2'
+      - '--region=us-central1'
+      - '--runtime=python312'
+      - '--memory=1G'
+      - '--trigger-http'
+      - '--no-allow-unauthenticated'
+      - '--entry-point=trigger_processor'
+      - '--source'
+      - '.'
+      - '--set-env-vars
+      - 'GCS_BUCKET_ID=edgar_666,REQUEST_TOPIC=edgarai-request,RESPONSE_TOPIC=edgarai-response'
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'functions'
+      - 'deploy'
+      - 'get_most_relevant_chunks'
+      - '--gen2'
+      - '--region=us-central1'
+      - '--runtime=python312'
+      - '--timeout=120s'
+      - '--max-instances=100'
+      - '--trigger-topic=edgarai-request'
+      - '--no-allow-unauthenticated'
+      - '--entry-point=get_most_relevant_chunks'
+      - '--source'
+      - '.'
