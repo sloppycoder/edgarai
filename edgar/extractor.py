@@ -67,6 +67,8 @@ def _query_for_chunk_distances(cik: str, accession_number: str):
     with bigquery.Client() as bq_client:
         query_job = bq_client.query(query)
         results = query_job.result()
+        elapsed_t = query_job.ended - query_job.started
+        logger.info(f"relevant_chunks query took {elapsed_t.total_seconds()} seconds")
 
         chunk_distances = {}
         for row in results:
