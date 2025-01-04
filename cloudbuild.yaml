@@ -1,3 +1,10 @@
+substitutions:
+  _REGION: "us-central1"
+  _RUNTIME: "python312"
+  _REQ_TOPIC: "edgarai-request"
+  _RES_TOPIC: "edgarai-respsone"
+  _BUCKET_ID: "edgar_66_6"
+
 options:
   logging: CLOUD_LOGGING_ONLY
 
@@ -9,17 +16,17 @@ steps:
       - "deploy"
       - "edgar_processor"
       - "--gen2"
-      - "--region=us-central1"
-      - "--runtime=python312"
+      - "--region=${_REGION}"
+      - "--runtime=${_RUNTIME}"
       - "--memory=2G"
       - "--timeout=1800s"
       - "--max-instances=200"
-      - "--trigger-topic=edgarai-request"
+      - "--trigger-topic=${_REQ_TOPIC}"
       - "--entry-point=edgar_processor"
       - "--source"
       - "."
       - "--set-env-vars"
-      - "GCS_BUCKET_ID=edgar_666,RESPONSE_TOPIC=edgarai-response"
+      - "GCS_BUCKET_ID=${_BUCKET_ID},RESPONSE_TOPIC=${_RES_TOPIC}"
 
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: gcloud
@@ -28,8 +35,8 @@ steps:
       - "deploy"
       - "trigger_processor"
       - "--gen2"
-      - "--region=us-central1"
-      - "--runtime=python312"
+      - "--region=${_REGION}"
+      - "--runtime=${_RUNTIME}"
       - "--memory=1G"
       - "--trigger-http"
       - "--no-allow-unauthenticated"
@@ -37,7 +44,7 @@ steps:
       - "--source"
       - "."
       - "--set-env-vars"
-      - "GCS_BUCKET_ID=edgar_666,REQUEST_TOPIC=edgarai-request,RESPONSE_TOPIC=edgarai-response"
+      - "GCS_BUCKET_ID=${_BUCKET_ID},REQUEST_TOPIC=${_REQ_TOPIC},RESPONSE_TOPIC=${_RES_TOPIC}"
 
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: gcloud
@@ -46,8 +53,8 @@ steps:
       - "deploy"
       - "get_most_relevant_chunks"
       - "--gen2"
-      - "--region=us-central1"
-      - "--runtime=python312"
+      - "--region=${_REGION}"
+      - "--runtime=${_RUNTIME}"
       - "--timeout=120s"
       - "--max-instances=100"
       - "--trigger-http"
