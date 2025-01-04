@@ -4,6 +4,7 @@ substitutions:
   _REQ_TOPIC: "edgarai-request"
   _RES_TOPIC: "edgarai-respsone"
   _BUCKET_ID: "edgar_66_6"
+  _LOG_LEVEL: "INFO"
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -26,7 +27,7 @@ steps:
       - "--source"
       - "."
       - "--set-env-vars"
-      - "GCS_BUCKET_ID=${_BUCKET_ID},RESPONSE_TOPIC=${_RES_TOPIC}"
+      - "GCS_BUCKET_ID=${_BUCKET_ID},RESPONSE_TOPIC=${_RES_TOPIC},LOG_LEVEL=${_LOG_LEVEL}"
 
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: gcloud
@@ -44,7 +45,7 @@ steps:
       - "--source"
       - "."
       - "--set-env-vars"
-      - "GCS_BUCKET_ID=${_BUCKET_ID},REQUEST_TOPIC=${_REQ_TOPIC},RESPONSE_TOPIC=${_RES_TOPIC}"
+      - "GCS_BUCKET_ID=${_BUCKET_ID},REQUEST_TOPIC=${_REQ_TOPIC},RESPONSE_TOPIC=${_RES_TOPIC},LOG_LEVEL=${_LOG_LEVEL}"
 
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: gcloud
@@ -62,3 +63,4 @@ steps:
       - "--entry-point=get_most_relevant_chunks"
       - "--source"
       - "."
+      - "LOG_LEVEL=${_LOG_LEVEL}"
