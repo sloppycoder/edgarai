@@ -15,7 +15,7 @@ steps:
       - "--timeout=1800s"
       - "--max-instances=200"
       - "--trigger-topic=edgarai-request"
-      - "--entry-point=edgar_processo"
+      - "--entry-point=edgar_processor"
       - "--source"
       - "."
       - "--set-env-vars"
