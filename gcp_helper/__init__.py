@@ -58,7 +58,7 @@ def ensure_table_exists(bq_client, table_ref, schema):
     except google_exceptions.NotFound:
         table = bigquery.Table(table_ref, schema=schema)
         bq_client.create_table(table)
-        logger.info(f"Table {table_ref} created.")
+        logger.debug(f"Table {table_ref} created.")
 
 
 def create_cloudevent(attributes: dict[str, Any], data: dict[str, Any]) -> CloudEvent:

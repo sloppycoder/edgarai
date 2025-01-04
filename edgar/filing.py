@@ -128,7 +128,7 @@ class SECFiling:
             chunks = chunk_text(trimmed_html)
             elasped_t = datetime.now() - start_t
             logger.info(
-                f"Chunked trimmed html text of {len(trimmed_html)} bytes into {len(chunks)} chunks took {elasped_t.total_seconds()}"  # noqa E501
+                f"Chunked trimmed html text of {len(trimmed_html)} bytes into {len(chunks)} chunks took {elasped_t.total_seconds()} seconds"  # noqa E501
             )
         except Exception as e:
             logger.info(f"Error chunking text: {e}")
