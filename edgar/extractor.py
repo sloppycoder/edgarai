@@ -46,7 +46,6 @@ def _query_for_chunk_distances(cik: str, accession_number: str):
     query = rf"""
             SELECT
                 base.chunk_num,
-                query.content AS query,
                 distance
             FROM
             VECTOR_SEARCH(
