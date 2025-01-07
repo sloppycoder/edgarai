@@ -3,6 +3,7 @@ import logging
 from google.cloud import bigquery
 
 import config
+from algo import most_relevant_chunks, relevance_by_appearance, relevance_by_distance
 
 from .filing import SECFiling
 
@@ -19,27 +20,18 @@ def chunk_filing(cik: str, idx_filename: str, form_type: str) -> int:
     return n_chunks
 
 
-def find_most_relevant_chunks(cik: str, access_number: str) -> list[str]:
+def find_most_relevant_chunks(
+    cik: str, access_number: str, method: str = "distance"
+) -> list[str]:
     chunk_distances = _query_for_chunk_distances(cik, access_number)
-    relevance_scores = _calculate_relevance(chunk_distances)
 
-    # select top 3 chunks, use the first one and the next one if they are adjacent
-    top_chunks = [chunk_num for chunk_num, _, _, _ in relevance_scores[:3]]
-    selected_chunks = []
-    if top_chunks:
-        selected_chunks.append(top_chunks[0])
-        if len(top_chunks) > 1:
-            if abs(top_chunks[0] - top_chunks[1]) == 1:
-                selected_chunks.append(top_chunks[1])
-        if len(top_chunks) > 2:
-            if abs(top_chunks[0] - top_chunks[2]) == 1:
-                selected_chunks.append(top_chunks[2])
+    if method == "distance":
+        relevance_scores = relevance_by_distance(chunk_distances)
+    else:
+        relevance_scores = relevance_by_appearance(chunk_distances)
 
-        selected_chunks = list(set(selected_chunks))
-        selected_chunks.sort()
-        return selected_chunks
-
-    return []
+    selected_chunks = most_relevant_chunks(relevance_scores)
+    return selected_chunks
 
 
 def _query_for_chunk_distances(cik: str, accession_number: str):
@@ -80,15 +72,3 @@ def _query_for_chunk_distances(cik: str, accession_number: str):
             chunk_distances[chunk_num].append(distance)
 
         return chunk_distances
-
-
-def _calculate_relevance(chunk_distances):
-    relevance_scores = []
-    for chunk_num, distances in chunk_distances.items():
-        frequency = len(distances)
-        avg_distance = sum(distances) / frequency
-        score = frequency / (1 + avg_distance)
-        relevance_scores.append((chunk_num, frequency, avg_distance, score))
-    # Sort by score in descending order
-    relevance_scores.sort(key=lambda x: x[3], reverse=True)
-    return relevance_scores
