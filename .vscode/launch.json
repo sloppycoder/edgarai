@@ -5,12 +5,15 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Test function locally",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
+            "program": "main.py",
             "console": "integratedTerminal",
-            "justMyCode": false
+            "justMyCode": false,
+            "args": [
+                "--target=get_most_relevant_chunks"
+            ]
         },
         {
             "name": "pytest",

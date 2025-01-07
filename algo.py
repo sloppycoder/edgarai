@@ -15,7 +15,7 @@ def most_relevant_chunks(relevance_scores) -> list[str]:
 
         selected_chunks = list(set(selected_chunks))
         selected_chunks.sort()
-        return [str(n) for n in selected_chunks]
+        return selected_chunks
 
     return []
 

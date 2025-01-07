@@ -2,6 +2,7 @@ import base64
 import datetime
 import json
 import logging
+import sys
 
 import flask
 import functions_framework
@@ -211,3 +212,9 @@ def get_most_relevant_chunks(request: flask.Request):
 
     except Exception as e:
         return flask.jsonify({"errorMessage": str(e)}), 400
+
+
+if __name__ == "__main__":
+    from functions_framework._cli import _cli
+
+    sys.exit(_cli())
